@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;">
+    <title>Office Password Manager</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/components.css">
+    <link rel="stylesheet" href="styles/themes.css">
+</head>
+<body class="theme-light">
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Loading Password Manager...</div>
+    </div>
+
+    <!-- Login Screen -->
+    <div id="login-screen" class="screen login-screen hidden">
+        <div class="login-container">
+            <div class="login-header">
+                <img src="../assets/icon.png" alt="Password Manager" class="login-logo">
+                <h1>Office Password Manager</h1>
+                <p>Secure password management for your office</p>
+            </div>
+            
+            <form id="login-form" class="login-form">
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email" required autocomplete="email">
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required autocomplete="current-password">
+                </div>
+                
+                <div class="form-group checkbox-group">
+                    <label>
+                        <input type="checkbox" id="remember-me" name="rememberMe">
+                        <span class="checkmark"></span>
+                        Remember me
+                    </label>
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-login">
+                    <span class="btn-text">Sign In</span>
+                    <span class="btn-spinner hidden"></span>
+                </button>
+                
+                <div id="login-error" class="error-message hidden"></div>
+            </form>
+            
+            <div class="login-footer">
+                <p>Need help? Contact your system administrator</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div id="main-app" class="screen main-app hidden">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-left">
+                <img src="../assets/icon.png" alt="Password Manager" class="app-logo">
+                <h1>Password Manager</h1>
+            </div>
+            
+            <div class="header-center">
+                <div class="search-container">
+                    <input type="text" id="search-input" placeholder="Search passwords..." class="search-input">
+                    <button class="search-btn" id="search-btn">
+                        <svg class="search-icon" viewBox="0 0 24 24">
+                            <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="header-right">
+                <div class="connection-status" id="connection-status">
+                    <span class="status-indicator online"></span>
+                    <span class="status-text">Connected</span>
+                </div>
+                
+                <div class="user-menu">
+                    <button class="user-menu-btn" id="user-menu-btn">
+                        <span class="user-avatar" id="user-avatar">A</span>
+                        <span class="user-name" id="user-name">Admin</span>
+                        <svg class="dropdown-icon" viewBox="0 0 24 24">
+                            <path d="M7 10l5 5 5-5z"/>
+                        </svg>
+                    </button>
+                    
+                    <div class="user-menu-dropdown hidden" id="user-menu-dropdown">
+                        <a href="#" class="menu-item" id="profile-menu">Profile</a>
+                        <a href="#" class="menu-item" id="settings-menu">Settings</a>
+                        <div class="menu-divider"></div>
+                        <a href="#" class="menu-item" id="logout-menu">Sign Out</a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active" data-view="passwords">
+                    <svg class="nav-icon" viewBox="0 0 24 24">
+                        <path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/>
+                    </svg>
+                    <span>Passwords</span>
+                </a>
+                
+                <a href="#" class="nav-item" data-view="categories">
+                    <svg class="nav-icon" viewBox="0 0 24 24">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                    <span>Categories</span>
+                </a>
+                
+                <a href="#" class="nav-item admin-only" data-view="users">
+                    <svg class="nav-icon" viewBox="0 0 24 24">
+                        <path d="M16 4c0-1.11.89-2 2-2s2 .89 2 2-.89 2-2 2-2-.89-2-2zm4 18v-6h2.5l-2.54-7.63A3.01 3.01 0 0 0 16.5 6.5h-1c-1.66 0-3 1.34-3 3v7h2v8h6z"/>
+                    </svg>
+                    <span>Users</span>
+                </a>
+                
+                <a href="#" class="nav-item admin-only" data-view="audit">
+                    <svg class="nav-icon" viewBox="0 0 24 24">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
+                    </svg>
+                    <span>Audit Log</span>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <button class="btn btn-primary btn-add-password" id="add-password-btn">
+                    <svg class="btn-icon" viewBox="0 0 24 24">
+                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                    </svg>
+                    Add Password
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Passwords View -->
+            <div id="passwords-view" class="view active">
+                <div class="view-header">
+                    <h2>Passwords</h2>
+                    <div class="view-actions">
+                        <select id="category-filter" class="filter-select">
+                            <option value="">All Categories</option>
+                        </select>
+                        
+                        <button class="btn btn-secondary" id="export-btn">Export</button>
+                        <button class="btn btn-secondary admin-only" id="import-btn">Import</button>
+                    </div>
+                </div>
+                
+                <div class="passwords-grid" id="passwords-grid">
+                    <!-- Password cards will be dynamically inserted here -->
+                </div>
+                
+                <div class="pagination" id="pagination">
+                    <!-- Pagination controls will be inserted here -->
+                </div>
+            </div>
+
+            <!-- Categories View -->
+            <div id="categories-view" class="view hidden">
+                <div class="view-header">
+                    <h2>Categories</h2>
+                    <div class="view-actions">
+                        <button class="btn btn-primary admin-only" id="add-category-btn">Add Category</button>
+                    </div>
+                </div>
+                
+                <div class="categories-grid" id="categories-grid">
+                    <!-- Category cards will be dynamically inserted here -->
+                </div>
+            </div>
+
+            <!-- Users View (Admin Only) -->
+            <div id="users-view" class="view hidden admin-only">
+                <div class="view-header">
+                    <h2>User Management</h2>
+                    <div class="view-actions">
+                        <button class="btn btn-primary" id="add-user-btn">Add User</button>
+                    </div>
+                </div>
+                
+                <div class="users-table-container">
+                    <table class="users-table" id="users-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Last Login</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-table-body">
+                            <!-- User rows will be dynamically inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Audit Log View (Admin Only) -->
+            <div id="audit-view" class="view hidden admin-only">
+                <div class="view-header">
+                    <h2>Audit Log</h2>
+                    <div class="view-actions">
+                        <input type="date" id="audit-date-filter" class="date-filter">
+                        <select id="audit-action-filter" class="filter-select">
+                            <option value="">All Actions</option>
+                            <option value="login">Login</option>
+                            <option value="password_created">Password Created</option>
+                            <option value="password_updated">Password Updated</option>
+                            <option value="password_deleted">Password Deleted</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="audit-table-container">
+                    <table class="audit-table" id="audit-table">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>User</th>
+                                <th>Action</th>
+                                <th>Resource</th>
+                                <th>IP Address</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody id="audit-table-body">
+                            <!-- Audit log entries will be dynamically inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="modal-overlay" class="modal-overlay hidden">
+        <!-- Password Modal -->
+        <div id="password-modal" class="modal hidden">
+            <div class="modal-header">
+                <h3 id="password-modal-title">Add Password</h3>
+                <button class="modal-close" id="password-modal-close">&times;</button>
+            </div>
+            
+            <form id="password-form" class="modal-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="password-title">Title *</label>
+                        <input type="text" id="password-title" name="title" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="password-category">Category</label>
+                        <select id="password-category" name="category">
+                            <option value="">Select Category</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="password-username">Username *</label>
+                        <input type="text" id="password-username" name="username" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="password-url">Website URL</label>
+                        <input type="url" id="password-url" name="url">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password-password">Password *</label>
+                    <div class="password-input-group">
+                        <input type="password" id="password-password" name="password" required>
+                        <button type="button" class="btn btn-secondary btn-toggle-password" id="toggle-password">
+                            <svg class="eye-icon" viewBox="0 0 24 24">
+                                <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                            </svg>
+                        </button>
+                        <button type="button" class="btn btn-secondary btn-generate-password" id="generate-password">
+                            <svg class="generate-icon" viewBox="0 0 24 24">
+                                <path d="M12 6v3l4-4-4-4v3c-4.42 0-8 3.58-8 8 0 1.57.46 3.03 1.24 4.26L6.7 14.8c-.45-.83-.7-1.79-.7-2.8 0-3.31 2.69-6 6-6zm6.76 1.74L17.3 9.2c.44.84.7 1.79.7 2.8 0 3.31-2.69 6-6 6v-3l-4 4 4 4v-3c4.42 0 8-3.58 8-8 0-1.57-.46-3.03-1.24-4.26z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password-notes">Notes</label>
+                    <textarea id="password-notes" name="notes" rows="3"></textarea>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="password-cancel">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="password-save">Save Password</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notification-container" class="notification-container"></div>
+
+    <!-- Scripts -->
+    <script src="js/utils.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/passwords.js"></script>
+    <script src="js/categories.js"></script>
+    <script src="js/users.js"></script>
+    <script src="js/realtime.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
