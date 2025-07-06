@@ -189,19 +189,25 @@
                 <div class="view-header">
                     <h2>User Management</h2>
                     <div class="view-actions">
+                        <input type="text" id="user-search" placeholder="Search users..." class="search-input">
                         <button class="btn btn-primary" id="add-user-btn">Add User</button>
                     </div>
                 </div>
-                
+
+                <!-- User Statistics -->
+                <div id="user-stats" class="stats-grid">
+                    <!-- Stats will be dynamically inserted here -->
+                </div>
+
                 <div class="users-table-container">
                     <table class="users-table" id="users-table">
                         <thead>
                             <tr>
-                                <th>Name</th>
-                                <th>Email</th>
+                                <th>User</th>
                                 <th>Role</th>
                                 <th>Last Login</th>
-                                <th>Status</th>
+                                <th>Online Status</th>
+                                <th>Account Status</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -217,17 +223,38 @@
                 <div class="view-header">
                     <h2>Audit Log</h2>
                     <div class="view-actions">
-                        <input type="date" id="audit-date-filter" class="date-filter">
+                        <input type="date" id="audit-date-from" class="date-filter" placeholder="From date">
+                        <input type="date" id="audit-date-to" class="date-filter" placeholder="To date">
                         <select id="audit-action-filter" class="filter-select">
                             <option value="">All Actions</option>
                             <option value="login">Login</option>
+                            <option value="logout">Logout</option>
                             <option value="password_created">Password Created</option>
                             <option value="password_updated">Password Updated</option>
                             <option value="password_deleted">Password Deleted</option>
+                            <option value="password_viewed">Password Viewed</option>
+                            <option value="user_created">User Created</option>
+                            <option value="user_updated">User Updated</option>
+                            <option value="user_deleted">User Deleted</option>
                         </select>
+                        <button class="btn btn-secondary" id="refresh-audit-btn">Refresh</button>
+                        <button class="btn btn-secondary" id="export-audit-btn">Export</button>
                     </div>
                 </div>
-                
+
+                <!-- Quick Date Filters -->
+                <div class="quick-filters">
+                    <button class="btn btn-sm btn-secondary" onclick="window.app.auditManager.setDateRange(1)">Last 24h</button>
+                    <button class="btn btn-sm btn-secondary" onclick="window.app.auditManager.setDateRange(7)">Last 7 days</button>
+                    <button class="btn btn-sm btn-secondary" onclick="window.app.auditManager.setDateRange(30)">Last 30 days</button>
+                    <button class="btn btn-sm btn-secondary" onclick="window.app.auditManager.clearFilters()">Clear Filters</button>
+                </div>
+
+                <!-- Audit Statistics -->
+                <div id="audit-stats" class="stats-grid">
+                    <!-- Stats will be dynamically inserted here -->
+                </div>
+
                 <div class="audit-table-container">
                     <table class="audit-table" id="audit-table">
                         <thead>
@@ -244,6 +271,10 @@
                             <!-- Audit log entries will be dynamically inserted here -->
                         </tbody>
                     </table>
+                </div>
+
+                <div class="pagination" id="audit-pagination">
+                    <!-- Pagination controls will be inserted here -->
                 </div>
             </div>
         </main>
@@ -313,6 +344,70 @@
                 </div>
             </form>
         </div>
+
+        <!-- User Modal (Admin Only) -->
+        <div id="user-modal" class="modal hidden">
+            <div class="modal-header">
+                <h3 id="user-modal-title">Add User</h3>
+                <button class="modal-close" id="user-modal-close">&times;</button>
+            </div>
+
+            <form id="user-form" class="modal-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="user-firstName">First Name *</label>
+                        <input type="text" id="user-firstName" name="firstName" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="user-lastName">Last Name *</label>
+                        <input type="text" id="user-lastName" name="lastName" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="user-email">Email Address *</label>
+                        <input type="email" id="user-email" name="email" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="user-role">Role</label>
+                        <select id="user-role" name="role" required>
+                            <option value="user">User</option>
+                            <option value="admin">Administrator</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="password-fields">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="user-password">Password *</label>
+                            <input type="password" id="user-password" name="password" minlength="8">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="user-confirmPassword">Confirm Password *</label>
+                            <input type="password" id="user-confirmPassword" name="confirmPassword" minlength="8">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group checkbox-group">
+                    <label>
+                        <input type="checkbox" id="user-isActive" name="isActive" checked>
+                        <span class="checkmark"></span>
+                        Active User
+                    </label>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="user-cancel">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="user-save">Create User</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <!-- Notification Container -->
@@ -325,6 +420,7 @@
     <script src="js/passwords.js"></script>
     <script src="js/categories.js"></script>
     <script src="js/users.js"></script>
+    <script src="js/audit.js"></script>
     <script src="js/realtime.js"></script>
     <script src="js/app.js"></script>
 </body>

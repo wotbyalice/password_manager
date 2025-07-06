@@ -29,6 +29,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   updateUser: (id, data) => ipcRenderer.invoke('users:update', id, data),
   deleteUser: (id) => ipcRenderer.invoke('users:delete', id),
 
+  // Audit logs (admin only)
+  getAuditLogs: (params) => ipcRenderer.invoke('audit:get-logs', params),
+  exportAuditLogs: (data, filename) => ipcRenderer.invoke('audit:export', data, filename),
+
   // Real-time events
   onPasswordCreated: (callback) => {
     ipcRenderer.on('realtime:password-created', callback);

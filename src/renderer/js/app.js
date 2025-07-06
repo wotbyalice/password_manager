@@ -117,6 +117,11 @@ class PasswordManagerApp {
         if (this.currentUser?.role === 'admin' && window.UserManager) {
             this.userManager = new UserManager();
         }
+
+        // Initialize audit management (admin only)
+        if (this.currentUser?.role === 'admin' && window.AuditManager) {
+            this.auditManager = new AuditManager();
+        }
     }
 
     /**
@@ -326,6 +331,11 @@ class PasswordManagerApp {
             if (this.currentUser?.role === 'admin' && this.userManager) {
                 await this.userManager.loadUsers();
             }
+
+            // Load audit logs if admin
+            if (this.currentUser?.role === 'admin' && this.auditManager) {
+                await this.auditManager.loadAuditLogs();
+            }
             
         } catch (error) {
             console.error('Error loading initial data:', error);
@@ -386,7 +396,9 @@ class PasswordManagerApp {
                     }
                     break;
                 case 'audit':
-                    // Load audit logs
+                    if (this.auditManager) {
+                        await this.auditManager.loadAuditLogs();
+                    }
                     break;
             }
         } catch (error) {

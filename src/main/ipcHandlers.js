@@ -200,10 +200,94 @@ function setupIpcHandlers() {
       const response = await api.post('/passwords/categories', data);
       return { success: true, data: response.data };
     } catch (error) {
-      return { 
-        success: false, 
-        error: error.response?.data?.error || 'Failed to create category' 
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Failed to create category'
       };
+    }
+  });
+
+  // User management handlers (admin only)
+  ipcMain.handle('users:get-all', async (event) => {
+    try {
+      const response = await api.get('/users');
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Failed to fetch users'
+      };
+    }
+  });
+
+  ipcMain.handle('users:create', async (event, data) => {
+    try {
+      const response = await api.post('/users', data);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Failed to create user'
+      };
+    }
+  });
+
+  ipcMain.handle('users:update', async (event, id, data) => {
+    try {
+      const response = await api.put(`/users/${id}`, data);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Failed to update user'
+      };
+    }
+  });
+
+  ipcMain.handle('users:delete', async (event, id) => {
+    try {
+      const response = await api.delete(`/users/${id}`);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Failed to delete user'
+      };
+    }
+  });
+
+  // Audit log handlers (admin only)
+  ipcMain.handle('audit:get-logs', async (event, params = {}) => {
+    try {
+      const queryParams = new URLSearchParams(params);
+      const response = await api.get(`/audit/logs?${queryParams}`);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Failed to fetch audit logs'
+      };
+    }
+  });
+
+  ipcMain.handle('audit:export', async (event, data, filename) => {
+    try {
+      const result = await dialog.showSaveDialog(global.mainWindow, {
+        defaultPath: filename || 'audit-logs-export.json',
+        filters: [
+          { name: 'JSON Files', extensions: ['json'] },
+          { name: 'All Files', extensions: ['*'] }
+        ]
+      });
+
+      if (!result.canceled && result.filePath) {
+        await fs.writeFile(result.filePath, JSON.stringify(data, null, 2));
+        return { success: true, filePath: result.filePath };
+      }
+
+      return { success: false, error: 'Export cancelled' };
+    } catch (error) {
+      return { success: false, error: error.message };
     }
   });
 
