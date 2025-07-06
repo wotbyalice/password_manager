@@ -18,6 +18,11 @@ const {
 } = require('./categoryService');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
 const { auditLog } = require('../utils/logger');
+const {
+  broadcastPasswordCreated,
+  broadcastPasswordUpdate,
+  broadcastPasswordDeleted
+} = require('../realtime/socketHandlers');
 
 const router = express.Router();
 
@@ -311,6 +316,12 @@ router.post('/', passwordCreateLimiter, async (req, res) => {
 
     const createdPassword = await createPasswordEntry(passwordData, req.user.userId);
 
+    // Broadcast real-time update to all connected clients
+    const io = req.app.get('io');
+    if (io) {
+      broadcastPasswordCreated(io, createdPassword, req.user.userId);
+    }
+
     auditLog('password_created', req.user.userId, {
       ip: clientIP,
       userAgent,
@@ -368,6 +379,12 @@ router.put('/:id', requireAdmin, async (req, res) => {
     }
 
     const updatedPassword = await updatePasswordEntry(passwordId, updateData, req.user.userId);
+
+    // Broadcast real-time update to all connected clients
+    const io = req.app.get('io');
+    if (io) {
+      broadcastPasswordUpdate(io, updatedPassword, req.user.userId);
+    }
 
     auditLog('password_updated', req.user.userId, {
       ip: clientIP,
@@ -439,6 +456,12 @@ router.delete('/:id', requireAdmin, async (req, res) => {
         success: false,
         error: 'Password entry not found'
       });
+    }
+
+    // Broadcast real-time update to all connected clients
+    const io = req.app.get('io');
+    if (io) {
+      broadcastPasswordDeleted(io, passwordId, req.user.userId);
     }
 
     auditLog('password_deleted', req.user.userId, {

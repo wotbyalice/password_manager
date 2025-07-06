@@ -1,5 +1,7 @@
+const { createServer } = require('http');
 const app = require('./app');
 const { testConnection } = require('./database/connection');
+const { initializeSocketServer, shutdownSocketServer } = require('./realtime/socketServer');
 const logger = require('./utils/logger');
 
 const PORT = process.env.PORT || 3000;
@@ -9,25 +11,38 @@ async function startServer() {
     // Test database connection
     logger.info('Testing database connection...');
     const dbConnected = await testConnection();
-    
+
     if (!dbConnected) {
       logger.error('Failed to connect to database. Exiting...');
       process.exit(1);
     }
 
+    // Create HTTP server
+    const httpServer = createServer(app);
+
+    // Initialize Socket.io
+    const io = initializeSocketServer(httpServer);
+
+    // Make io available to the app
+    app.set('io', io);
+
     // Start server
-    const server = app.listen(PORT, () => {
+    const server = httpServer.listen(PORT, () => {
       logger.info(`Server started successfully`, {
         port: PORT,
         environment: process.env.NODE_ENV || 'development',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        features: ['HTTP API', 'Socket.io Real-time', 'Authentication', 'Password Management']
       });
     });
 
     // Graceful shutdown
     const gracefulShutdown = () => {
       logger.info('Received shutdown signal, closing server...');
-      
+
+      // Shutdown Socket.io first
+      shutdownSocketServer(io);
+
       server.close(() => {
         logger.info('Server closed successfully');
         process.exit(0);
