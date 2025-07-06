@@ -8,6 +8,7 @@ require('dotenv').config();
 const logger = require('./utils/logger');
 const { testConnection } = require('./database/connection');
 const authRoutes = require('./auth/authRoutes');
+const passwordRoutes = require('./passwords/passwordRoutes');
 
 // Create Express app
 const app = express();
@@ -127,6 +128,7 @@ app.get('/health', async (req, res) => {
 
 // API routes
 app.use('/api/auth', authRoutes);
+app.use('/api/passwords', passwordRoutes);
 
 // Admin routes (placeholder for future implementation)
 app.get('/api/admin/users', (req, res) => {
