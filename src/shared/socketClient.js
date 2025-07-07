@@ -12,7 +12,7 @@ class SocketClient {
     this.reconnectDelay = 1000;
     this.eventHandlers = new Map();
     this.token = null;
-    this.serverUrl = process.env.SERVER_URL || 'http://localhost:3000';
+    this.serverUrl = process.env.SERVER_URL || 'http://localhost:3001';
   }
 
   /**

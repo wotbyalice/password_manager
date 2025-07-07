@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Route Test</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .test { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        button { padding: 10px 20px; margin: 10px; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Route Testing</h1>
+    
+    <div class="test">
+        <h3>Test 1: Direct Form to /form-login</h3>
+        <form action="/form-login" method="POST">
+            <input type="hidden" name="email" value="admin@company.com">
+            <input type="hidden" name="password" value="Admin123!">
+            <button type="submit">Submit to /form-login</button>
+        </form>
+    </div>
+    
+    <div class="test">
+        <h3>Test 2: Direct Form to /api/auth/login</h3>
+        <form action="/api/auth/login" method="POST">
+            <input type="hidden" name="email" value="admin@company.com">
+            <input type="hidden" name="password" value="Admin123!">
+            <button type="submit">Submit to /api/auth/login</button>
+        </form>
+    </div>
+    
+    <div class="test">
+        <h3>Test 3: Direct Form to /login</h3>
+        <form action="/login" method="POST">
+            <input type="hidden" name="email" value="admin@company.com">
+            <input type="hidden" name="password" value="Admin123!">
+            <button type="submit">Submit to /login</button>
+        </form>
+    </div>
+    
+    <div class="test">
+        <h3>Test 4: Absolute URL</h3>
+        <form action="http://localhost:3001/form-login" method="POST">
+            <input type="hidden" name="email" value="admin@company.com">
+            <input type="hidden" name="password" value="Admin123!">
+            <button type="submit">Submit to absolute URL</button>
+        </form>
+    </div>
+    
+    <p><strong>Instructions:</strong> Click each button and check the server logs to see which URL is actually being called.</p>
+</body>
+</html>

@@ -2,11 +2,11 @@ const { ipcMain, clipboard, dialog, shell, app, Notification } = require('electr
 const axios = require('axios');
 const fs = require('fs').promises;
 const path = require('path');
-const { store } = require('./main');
+const store = require('./store');
 const socketClient = require('../shared/socketClient');
 
 // API configuration
-const API_BASE_URL = process.env.API_URL || 'http://localhost:3000/api';
+const API_BASE_URL = process.env.API_URL || 'http://localhost:3001/api';
 let authToken = null;
 
 // Create axios instance with default config

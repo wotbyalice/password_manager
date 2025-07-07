@@ -4,17 +4,21 @@ const { testConnection } = require('./database/connection');
 const { initializeSocketServer, shutdownSocketServer } = require('./realtime/socketServer');
 const logger = require('./utils/logger');
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 
 async function startServer() {
   try {
-    // Test database connection
-    logger.info('Testing database connection...');
-    const dbConnected = await testConnection();
+    // Test database connection (skip if testing)
+    if (process.env.SKIP_DB_CONNECTION !== 'true') {
+      logger.info('Testing database connection...');
+      const dbConnected = await testConnection();
 
-    if (!dbConnected) {
-      logger.error('Failed to connect to database. Exiting...');
-      process.exit(1);
+      if (!dbConnected) {
+        logger.error('Failed to connect to database. Exiting...');
+        process.exit(1);
+      }
+    } else {
+      logger.info('Skipping database connection for testing...');
     }
 
     // Create HTTP server

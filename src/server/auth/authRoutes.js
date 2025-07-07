@@ -4,7 +4,7 @@ const {
   createUser,
   findUserByEmail,
   findUserById,
-  validatePassword,
+  verifyPasswordHash,
   generateToken,
   updateLastLogin,
   changePassword
@@ -12,6 +12,9 @@ const {
 const { validateEmail, validatePassword: validatePasswordStrength, validateName } = require('../utils/validation');
 const { authLog, auditLog } = require('../utils/logger');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
+
+// Import mock authentication for testing
+const mockAuth = require('../services/mockAuth');
 
 const router = express.Router();
 
@@ -154,10 +157,10 @@ router.post('/login', authLimiter, async (req, res) => {
 
     // Validate input
     if (!email || !password) {
-      authLog('login_failed', email, false, { 
-        ip: clientIP, 
-        userAgent, 
-        error: 'Missing credentials' 
+      authLog('login_failed', email, false, {
+        ip: clientIP,
+        userAgent,
+        error: 'Missing credentials'
       });
       return res.status(400).json({
         success: false,
@@ -165,13 +168,47 @@ router.post('/login', authLimiter, async (req, res) => {
       });
     }
 
-    // Find user
+    // Use mock authentication if database connection is skipped
+    if (process.env.SKIP_DB_CONNECTION === 'true') {
+      try {
+        const result = await mockAuth.login(email, password);
+
+        authLog('login_success', email, true, { ip: clientIP, userAgent });
+
+        res.json({
+          success: true,
+          message: 'Login successful',
+          token: result.token,
+          user: {
+            id: result.user.id,
+            email: result.user.email,
+            firstName: result.user.first_name,
+            lastName: result.user.last_name,
+            role: result.user.role,
+            lastLogin: result.user.last_login
+          }
+        });
+        return;
+      } catch (mockError) {
+        authLog('login_failed', email, false, {
+          ip: clientIP,
+          userAgent,
+          error: mockError.message
+        });
+        return res.status(401).json({
+          success: false,
+          error: 'Invalid credentials'
+        });
+      }
+    }
+
+    // Original database authentication logic
     const user = await findUserByEmail(email);
     if (!user) {
-      authLog('login_failed', email, false, { 
-        ip: clientIP, 
-        userAgent, 
-        error: 'User not found' 
+      authLog('login_failed', email, false, {
+        ip: clientIP,
+        userAgent,
+        error: 'User not found'
       });
       return res.status(401).json({
         success: false,
@@ -181,10 +218,10 @@ router.post('/login', authLimiter, async (req, res) => {
 
     // Check if user is active
     if (!user.isActive) {
-      authLog('login_failed', email, false, { 
-        ip: clientIP, 
-        userAgent, 
-        error: 'Account disabled' 
+      authLog('login_failed', email, false, {
+        ip: clientIP,
+        userAgent,
+        error: 'Account disabled'
       });
       return res.status(401).json({
         success: false,
@@ -193,12 +230,12 @@ router.post('/login', authLimiter, async (req, res) => {
     }
 
     // Validate password
-    const isPasswordValid = await validatePassword(password, user.passwordHash);
+    const isPasswordValid = await verifyPasswordHash(password, user.passwordHash);
     if (!isPasswordValid) {
-      authLog('login_failed', email, false, { 
-        ip: clientIP, 
-        userAgent, 
-        error: 'Invalid password' 
+      authLog('login_failed', email, false, {
+        ip: clientIP,
+        userAgent,
+        error: 'Invalid password'
       });
       return res.status(401).json({
         success: false,
@@ -233,10 +270,10 @@ router.post('/login', authLimiter, async (req, res) => {
     const clientIP = req.ip || req.connection.remoteAddress;
     const userAgent = req.get('User-Agent');
 
-    authLog('login_failed', req.body.email, false, { 
-      ip: clientIP, 
-      userAgent, 
-      error: error.message 
+    authLog('login_failed', req.body.email, false, {
+      ip: clientIP,
+      userAgent,
+      error: error.message
     });
 
     res.status(500).json({

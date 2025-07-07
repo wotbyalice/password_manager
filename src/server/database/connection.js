@@ -1,28 +1,43 @@
 const { Pool } = require('pg');
 const logger = require('../utils/logger');
+const SQLiteAdapter = require('./sqlite-adapter');
+
+// Check if we should use SQLite
+const useSQLite = process.env.USE_SQLITE === 'true';
 
 // Database configuration
 const dbConfig = {
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  ssl: process.env.DATABASE_URL && process.env.DATABASE_URL.includes('supabase') ? { rejectUnauthorized: false } : false,
   max: 20, // Maximum number of clients in the pool
   idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
   connectionTimeoutMillis: 2000, // Return an error after 2 seconds if connection could not be established
 };
 
-// Create connection pool
-const pool = new Pool(dbConfig);
+// Create connection pool or SQLite adapter
+let pool;
+let sqliteAdapter;
 
-// Handle pool errors
-pool.on('error', (err) => {
-  logger.error('Unexpected error on idle client', err);
-  process.exit(-1);
-});
+if (useSQLite) {
+  sqliteAdapter = new SQLiteAdapter(process.env.SQLITE_PATH);
+  logger.info('Using SQLite adapter for database operations');
+} else {
+  pool = new Pool(dbConfig);
+  logger.info('Using PostgreSQL connection pool');
+}
 
-// Handle pool connection
-pool.on('connect', () => {
-  logger.info('Database connected successfully');
-});
+// Handle pool errors (only for PostgreSQL)
+if (!useSQLite) {
+  pool.on('error', (err) => {
+    logger.error('Unexpected error on idle client', err);
+    process.exit(-1);
+  });
+
+  // Handle pool connection
+  pool.on('connect', () => {
+    logger.info('Database connected successfully');
+  });
+}
 
 /**
  * Execute a database query
@@ -32,27 +47,33 @@ pool.on('connect', () => {
  */
 async function query(text, params = []) {
   const start = Date.now();
-  
+
   try {
-    const result = await pool.query(text, params);
+    let result;
+    if (useSQLite) {
+      result = await sqliteAdapter.query(text, params);
+    } else {
+      result = await pool.query(text, params);
+    }
+
     const duration = Date.now() - start;
-    
+
     logger.debug('Executed query', {
       query: text,
       duration: `${duration}ms`,
-      rows: result.rowCount
+      rows: result.rowCount || result.rows?.length || 0
     });
-    
+
     return result;
   } catch (error) {
     const duration = Date.now() - start;
-    
+
     logger.error('Query error', {
       query: text,
       duration: `${duration}ms`,
       error: error.message
     });
-    
+
     throw error;
   }
 }

@@ -140,9 +140,12 @@ function errorLog(error, context = {}) {
 }
 
 module.exports = {
-  // Winston logger instance
-  ...logger,
-  
+  // Winston logger methods
+  info: logger.info.bind(logger),
+  error: logger.error.bind(logger),
+  warn: logger.warn.bind(logger),
+  debug: logger.debug.bind(logger),
+
   // Specialized logging functions
   auditLog,
   authLog,

@@ -109,19 +109,64 @@ async function getPasswordEntries(options = {}) {
     const entries = dataResult.rows;
 
     // Decrypt passwords and sensitive data
-    const decryptedEntries = entries.map(entry => ({
-      id: entry.id,
-      title: entry.title,
-      username: entry.username,
-      password: decryptPassword(entry.password_encrypted),
-      url: entry.url_encrypted ? decryptData(entry.url_encrypted) : null,
-      notes: entry.notes_encrypted ? decryptData(entry.notes_encrypted) : null,
-      category: entry.category,
-      createdBy: entry.created_by,
-      updatedBy: entry.updated_by,
-      createdAt: entry.created_at,
-      updatedAt: entry.updated_at
-    }));
+    const decryptedEntries = entries.map(entry => {
+      console.log('🔧 Decrypting entry:', {
+        id: entry.id,
+        title: entry.title,
+        password_encrypted: entry.password_encrypted ? entry.password_encrypted.substring(0, 20) + '...' : 'NULL',
+        url_encrypted: entry.url_encrypted ? entry.url_encrypted.substring(0, 20) + '...' : 'NULL',
+        notes_encrypted: entry.notes_encrypted ? entry.notes_encrypted.substring(0, 20) + '...' : 'NULL'
+      });
+
+      let decryptedPassword = null;
+      let decryptedUrl = null;
+      let decryptedNotes = null;
+
+      try {
+        decryptedPassword = entry.password_encrypted ? decryptPassword(entry.password_encrypted) : null;
+        console.log('🔧 Password decrypted successfully');
+      } catch (error) {
+        console.error('🔧 Password decryption failed:', error.message);
+      }
+
+      try {
+        decryptedUrl = entry.url_encrypted ? decryptData(entry.url_encrypted) : null;
+        console.log('🔧 URL decrypted successfully');
+      } catch (error) {
+        console.error('🔧 URL decryption failed:', error.message);
+      }
+
+      try {
+        decryptedNotes = entry.notes_encrypted ? decryptData(entry.notes_encrypted) : null;
+        console.log('🔧 Notes decrypted successfully');
+      } catch (error) {
+        console.error('🔧 Notes decryption failed:', error.message);
+      }
+
+      const decrypted = {
+        id: entry.id,
+        title: entry.title,
+        username: entry.username,
+        password: decryptedPassword,
+        url: decryptedUrl,
+        notes: decryptedNotes,
+        category: entry.category,
+        createdBy: entry.created_by,
+        updatedBy: entry.updated_by,
+        createdAt: entry.created_at,
+        updatedAt: entry.updated_at
+      };
+
+      console.log('🔧 Decrypted result:', {
+        id: decrypted.id,
+        title: decrypted.title,
+        password: decrypted.password ? decrypted.password.substring(0, 3) + '***' : 'NULL',
+        url: decrypted.url || 'NULL',
+        notes: decrypted.notes ? decrypted.notes.substring(0, 10) + '...' : 'NULL'
+      });
+
+      return decrypted;
+    });
 
     return {
       passwords: decryptedEntries,

@@ -15,22 +15,25 @@ function initializeSocketServer(httpServer) {
       origin: function (origin, callback) {
         // Allow requests with no origin (like mobile apps or Electron)
         if (!origin) return callback(null, true);
-        
+
         const allowedOrigins = [
           'http://localhost:3000',
           'http://localhost:3001',
           'http://127.0.0.1:3000',
-          'http://127.0.0.1:3001'
+          'http://127.0.0.1:3001',
+          'file://', // Allow Electron file:// protocol
+          'app://' // Allow Electron app:// protocol
         ];
-        
+
         if (process.env.NODE_ENV === 'production') {
           allowedOrigins.push(process.env.FRONTEND_URL);
         }
-        
-        if (allowedOrigins.indexOf(origin) !== -1) {
+
+        // Allow Electron origins
+        if (origin && (origin.startsWith('file://') || origin.startsWith('app://') || allowedOrigins.indexOf(origin) !== -1)) {
           callback(null, true);
         } else {
-          callback(new Error('Not allowed by CORS'));
+          callback(null, true); // Allow all origins for development
         }
       },
       credentials: true,

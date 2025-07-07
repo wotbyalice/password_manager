@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Basic Test</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        button { padding: 10px 20px; margin: 10px; }
+        .result { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+    <h1>Basic JavaScript Test</h1>
+    
+    <button onclick="test1()">Test 1: Alert</button>
+    <button onclick="test2()">Test 2: Console Log</button>
+    <button onclick="test3()">Test 3: Fetch Test</button>
+    
+    <div id="result"></div>
+    
+    <script>
+        console.log('Script loaded');
+        
+        function test1() {
+            alert('JavaScript is working!');
+        }
+        
+        function test2() {
+            console.log('Console log test');
+            document.getElementById('result').innerHTML = '<div class="result">Console log test - check browser console</div>';
+        }
+        
+        function test3() {
+            console.log('Starting fetch test...');
+            document.getElementById('result').innerHTML = '<div class="result">Testing fetch...</div>';
+            
+            fetch('http://localhost:3001/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    email: 'admin@company.com',
+                    password: 'Admin123!'
+                })
+            })
+            .then(response => {
+                console.log('Response status:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Response data:', data);
+                document.getElementById('result').innerHTML = '<div class="result">Success! Check console for details.</div>';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('result').innerHTML = '<div class="result">Error: ' + error.message + '</div>';
+            });
+        }
+    </script>
+</body>
+</html>

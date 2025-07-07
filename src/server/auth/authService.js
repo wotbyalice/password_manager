@@ -87,6 +87,7 @@ async function findUserByEmail(email) {
       firstName: user.first_name,
       lastName: user.last_name,
       role: user.role,
+      isActive: user.is_active !== false, // Default to true if not specified
       createdAt: user.created_at,
       updatedAt: user.updated_at,
       lastLogin: user.last_login
@@ -133,12 +134,12 @@ async function findUserById(userId) {
 }
 
 /**
- * Validate user password
+ * Validate user password against hash
  * @param {string} password - Plain text password
  * @param {string} passwordHash - Hashed password from database
  * @returns {Promise<boolean>} True if password is valid
  */
-async function validatePassword(password, passwordHash) {
+async function verifyPasswordHash(password, passwordHash) {
   try {
     return await bcrypt.compare(password, passwordHash);
   } catch (error) {
@@ -209,7 +210,7 @@ async function changePassword(userId, currentPassword, newPassword) {
     const userWithPassword = await findUserByEmail(user.email);
     
     // Validate current password
-    const isCurrentPasswordValid = await validatePassword(currentPassword, userWithPassword.passwordHash);
+    const isCurrentPasswordValid = await verifyPasswordHash(currentPassword, userWithPassword.passwordHash);
     if (!isCurrentPasswordValid) {
       throw new Error('Current password is incorrect');
     }
@@ -242,7 +243,7 @@ module.exports = {
   createUser,
   findUserByEmail,
   findUserById,
-  validatePassword,
+  verifyPasswordHash,
   generateToken,
   verifyToken,
   updateLastLogin,

@@ -24,6 +24,9 @@ const {
   broadcastPasswordDeleted
 } = require('../realtime/socketHandlers');
 
+// Import mock authentication for testing
+const mockAuth = require('../services/mockAuth');
+
 const router = express.Router();
 
 // Rate limiting for password operations

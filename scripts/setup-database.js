@@ -11,7 +11,10 @@ const crypto = require('crypto');
 require('dotenv').config();
 
 // Database configuration
-const dbConfig = {
+const dbConfig = process.env.DATABASE_URL ? {
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.DATABASE_URL.includes('supabase') ? { rejectUnauthorized: false } : false
+} : {
   host: process.env.DB_HOST || 'localhost',
   port: process.env.DB_PORT || 5432,
   database: process.env.DB_NAME || 'password_manager',

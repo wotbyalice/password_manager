@@ -1,15 +1,9 @@
 const { app, BrowserWindow, Menu, Tray, ipcMain, dialog, shell } = require('electron');
 const { autoUpdater } = require('electron-updater');
-const Store = require('electron-store');
 const path = require('path');
+const store = require('./store');
 const { setupIpcHandlers } = require('./ipcHandlers');
 const isDev = process.env.NODE_ENV === 'development';
-
-// Initialize secure storage
-const store = new Store({
-  encryptionKey: 'office-password-manager-key',
-  name: 'password-manager-config'
-});
 
 let mainWindow = null;
 let tray = null;
@@ -103,8 +97,16 @@ function createMainWindow() {
  * Create system tray
  */
 function createTray() {
-  const trayIconPath = path.join(__dirname, '../../assets/tray-icon.png');
-  tray = new Tray(trayIconPath);
+  try {
+    const trayIconPath = path.join(__dirname, '../../assets/tray-icon.png');
+
+    // Check if icon exists, if not skip tray creation
+    if (!require('fs').existsSync(trayIconPath)) {
+      console.log('Tray icon not found, skipping tray creation');
+      return;
+    }
+
+    tray = new Tray(trayIconPath);
 
   const contextMenu = Menu.buildFromTemplate([
     {
@@ -156,6 +158,9 @@ function createTray() {
       mainWindow.focus();
     }
   });
+  } catch (error) {
+    console.error('Failed to create tray:', error);
+  }
 }
 
 /**
@@ -399,4 +404,4 @@ app.on('web-contents-created', (event, contents) => {
   });
 });
 
-module.exports = { mainWindow, store };
+module.exports = { mainWindow };

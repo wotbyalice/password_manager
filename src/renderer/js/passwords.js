@@ -48,6 +48,9 @@ class PasswordManager {
 
         // Password modal events
         this.setupPasswordModal();
+
+        // Empty state add button (will be added dynamically)
+        this.setupEmptyStateButton();
     }
 
     /**
@@ -236,7 +239,7 @@ class PasswordManager {
                         ${password.updatedAt !== password.createdAt ? `• Updated ${this.formatDate(password.updatedAt)}` : ''}
                     </div>
                     <div class="card-actions">
-                        <button class="btn btn-sm btn-edit" data-edit="${password.id}" title="Edit password">
+                        <button class="btn btn-sm btn-edit" data-edit-password="${password.id}" title="Edit password">
                             <svg class="btn-icon" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
                             Edit
                         </button>
@@ -267,12 +270,25 @@ class PasswordManager {
                 </svg>
                 <h3>${message}</h3>
                 <p>Start by adding your first password to keep your accounts secure.</p>
-                <button class="btn btn-primary" onclick="window.app.passwordManager.showAddPasswordModal()">
+                <button class="btn btn-primary" id="empty-state-add-btn">
                     <svg class="btn-icon" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
                     Add Password
                 </button>
             </div>
         `;
+    }
+
+    /**
+     * Set up empty state button event listener
+     */
+    setupEmptyStateButton() {
+        // Use event delegation since the button is added dynamically
+        document.addEventListener('click', (e) => {
+            if (e.target.id === 'empty-state-add-btn') {
+                console.log('🔧 Empty state button clicked');
+                this.showAddPasswordModal();
+            }
+        });
     }
 
     /**
@@ -298,10 +314,10 @@ class PasswordManager {
         });
 
         // Edit buttons
-        document.querySelectorAll('[data-edit]').forEach(btn => {
+        document.querySelectorAll('[data-edit-password]').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                const passwordId = parseInt(btn.dataset.edit);
+                const passwordId = parseInt(btn.dataset.editPassword);
                 this.editPassword(passwordId);
             });
         });
@@ -369,22 +385,77 @@ class PasswordManager {
      * Edit password
      */
     async editPassword(passwordId) {
+        const startTime = Date.now();
+        window.logger?.logUserAction('Edit Password Started', null, { passwordId });
+
         try {
+            console.log('🔧 EditPassword: Starting edit for password ID:', passwordId);
+            window.logger?.info(`Starting edit for password ID: ${passwordId}`, 'EDIT_PASSWORD', { passwordId });
+
             const result = await electronAPI.getPassword(passwordId);
-            
+            console.log('🔧 EditPassword: API result:', result);
+            window.logger?.info(`API result received`, 'EDIT_PASSWORD', {
+                success: result.success,
+                hasData: !!result.data,
+                hasPassword: !!(result.data && result.data.password),
+                passwordId
+            });
+
             if (result.success) {
+                console.log('🔧 EditPassword: Success, password data:', result.data);
+                window.logger?.info(`Successfully retrieved password data`, 'EDIT_PASSWORD', {
+                    passwordId,
+                    hasTitle: !!(result.data.password?.title),
+                    hasUsername: !!(result.data.password?.username),
+                    hasPassword: !!(result.data.password?.password)
+                });
+
                 const password = result.data.password;
                 this.editingPasswordId = passwordId;
                 this.populatePasswordForm(password);
                 document.getElementById('password-modal-title').textContent = 'Edit Password';
                 document.getElementById('password-save').textContent = 'Update Password';
                 this.showModal('password-modal');
-                
+
                 // Start editing session for real-time collaboration
                 await electronAPI.startEditing(passwordId);
+                console.log('🔧 EditPassword: Edit session started successfully');
+
+                await fetch('/debug-log', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        level: 'info',
+                        message: `🔧 EDIT PASSWORD: Modal opened and editing session started successfully`
+                    })
+                }).catch(() => {});
+
+            } else {
+                console.error('🔧 EditPassword: API returned success=false:', result);
+
+                await fetch('/debug-log', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        level: 'error',
+                        message: `🔧 EDIT PASSWORD: FAILED - API returned success=false: ${JSON.stringify(result)}`
+                    })
+                }).catch(() => {});
+
+                this.showError('Failed to load password details');
             }
         } catch (error) {
-            console.error('Error loading password for edit:', error);
+            console.error('🔧 EditPassword: Exception caught:', error);
+
+            await fetch('/debug-log', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    level: 'error',
+                    message: `🔧 EDIT PASSWORD: EXCEPTION - ${error.message}`
+                })
+            }).catch(() => {});
+
             this.showError('Failed to load password details');
         }
     }
@@ -575,6 +646,29 @@ class PasswordManager {
     }
 
     showError(message) {
+        console.error('🔧 SHOW ERROR called with message:', message);
+
+        // Send error notification to server logs
+        fetch('/debug-log', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                level: 'error',
+                message: `🔧 ERROR NOTIFICATION: ${message}`
+            })
+        }).catch(() => {});
+
+        // Get stack trace to see where this was called from
+        const stack = new Error().stack;
+        fetch('/debug-log', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                level: 'info',
+                message: `🔧 ERROR STACK TRACE: ${stack.split('\n').slice(0, 5).join(' | ')}`
+            })
+        }).catch(() => {});
+
         window.app?.showNotification(message, 'error');
     }
 

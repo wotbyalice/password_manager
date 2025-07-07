@@ -117,12 +117,29 @@ function validatePasswordEntry(passwordData) {
     errors.push('Password must be less than 500 characters');
   }
 
-  // URL validation (optional)
+  // URL validation (optional) - very flexible
   if (url && typeof url === 'string' && url.trim().length > 0) {
-    const urlRegex = /^https?:\/\/.+/;
-    if (!urlRegex.test(url.trim())) {
-      errors.push('URL must be a valid HTTP or HTTPS URL');
-    } else if (url.trim().length > 500) {
+    const trimmedUrl = url.trim();
+
+    // Allow various URL formats:
+    // - https://example.com
+    // - http://example.com
+    // - www.example.com
+    // - example.com
+    // - subdomain.example.com
+    // - example.co.uk
+    const urlPatterns = [
+      /^https?:\/\/[\w\.-]+\.[\w]{2,}(\/.*)?$/i,           // Full URLs with protocol
+      /^www\.[\w\.-]+\.[\w]{2,}(\/.*)?$/i,                // www.example.com
+      /^[\w\.-]+\.[\w]{2,}(\/.*)?$/i,                     // example.com or subdomain.example.com
+      /^[\w-]+\.[\w]{2,}$/i                               // Simple domain.tld
+    ];
+
+    const isValidUrl = urlPatterns.some(pattern => pattern.test(trimmedUrl));
+
+    if (!isValidUrl) {
+      errors.push('Please enter a valid URL (e.g., example.com, www.example.com, or https://example.com)');
+    } else if (trimmedUrl.length > 500) {
       errors.push('URL must be less than 500 characters');
     }
   }

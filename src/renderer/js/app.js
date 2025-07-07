@@ -18,16 +18,25 @@ class PasswordManagerApp {
      */
     async init() {
         try {
+            console.log('🚀 App initialization started');
+            window.logger?.info('Application initialization started', 'APP_INIT');
+
             // Show loading screen
             this.showScreen('loading');
-            
+            window.logger?.info('Loading screen displayed', 'APP_INIT');
+
             // Check for saved authentication
             const savedToken = await electronAPI.getStoredData('authToken');
             const savedUser = await electronAPI.getStoredData('currentUser');
-            
+
+            console.log('🔑 Saved token:', savedToken ? 'Found' : 'Not found');
+            console.log('👤 Saved user:', savedUser ? 'Found' : 'Not found');
+
             if (savedToken && savedUser) {
+                console.log('🔍 Verifying saved token...');
                 // Verify token is still valid
                 const result = await electronAPI.verifyToken(savedToken);
+                console.log('🔍 Token verification result:', result);
                 if (result.success) {
                     this.currentUser = result.user;
                     this.isAuthenticated = true;
@@ -35,15 +44,17 @@ class PasswordManagerApp {
                     return;
                 }
             }
-            
+
             // Show login screen if not authenticated
+            console.log('🔐 Showing login screen');
             this.showScreen('login');
             this.initLoginHandlers();
-            
+
         } catch (error) {
-            console.error('App initialization error:', error);
+            console.error('❌ App initialization error:', error);
             this.showNotification('Application failed to initialize', 'error');
             this.showScreen('login');
+            this.initLoginHandlers();
         }
     }
 
@@ -134,6 +145,7 @@ class PasswordManagerApp {
                 e.preventDefault();
                 const view = item.dataset.view;
                 if (view) {
+                    window.logger?.logUserAction('Navigation Click', e.target, { view, from: this.currentView });
                     this.navigateToView(view);
                 }
             });
@@ -283,17 +295,18 @@ class PasswordManagerApp {
             errorEl.classList.add('hidden');
 
             try {
+                // Use Electron IPC for login
                 const result = await electronAPI.login(credentials);
-                
+
                 if (result.success) {
                     this.currentUser = result.user;
                     this.isAuthenticated = true;
-                    
+
                     // Save remember me preference
                     if (formData.get('rememberMe')) {
                         await electronAPI.setStoredData('rememberLogin', true);
                     }
-                    
+
                     await this.initMainApp();
                 } else {
                     errorEl.textContent = result.error || 'Login failed';
@@ -301,7 +314,7 @@ class PasswordManagerApp {
                 }
             } catch (error) {
                 console.error('Login error:', error);
-                errorEl.textContent = 'Login failed. Please try again.';
+                errorEl.textContent = 'Network error. Please check if the server is running.';
                 errorEl.classList.remove('hidden');
             } finally {
                 // Reset button state
@@ -520,7 +533,15 @@ class PasswordManagerApp {
 
 // Initialize app when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    window.app = new PasswordManagerApp();
+    console.log('🚀 DOM loaded, initializing app...');
+    try {
+        window.app = new PasswordManagerApp();
+        console.log('✅ App initialized successfully');
+    } catch (error) {
+        console.error('❌ App initialization failed:', error);
+        // Show a basic error message
+        document.body.innerHTML = '<div style="padding: 20px; color: red; font-family: Arial;">App initialization failed: ' + error.message + '</div>';
+    }
 });
 
 // Handle app errors

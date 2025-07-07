@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Test</title>
+    <style>
+        body { font-family: Arial; padding: 20px; background: #f0f0f0; }
+        .test { margin: 10px 0; padding: 15px; background: white; border-radius: 5px; }
+        .status { font-weight: bold; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        button { padding: 10px 20px; margin: 5px; font-size: 16px; }
+        #log { background: #000; color: #0f0; padding: 10px; font-family: monospace; height: 200px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔍 JavaScript Debug Test</h1>
+    
+    <div class="test">
+        <h3>Test 1: Basic JavaScript</h3>
+        <div id="test1-status" class="status info">Not tested</div>
+        <button onclick="runTest1()">Run Test 1</button>
+    </div>
+    
+    <div class="test">
+        <h3>Test 2: DOM Manipulation</h3>
+        <div id="test2-status" class="status info">Not tested</div>
+        <button onclick="runTest2()">Run Test 2</button>
+    </div>
+    
+    <div class="test">
+        <h3>Test 3: Network Request</h3>
+        <div id="test3-status" class="status info">Not tested</div>
+        <button onclick="runTest3()">Run Test 3</button>
+    </div>
+    
+    <div class="test">
+        <h3>Console Log</h3>
+        <div id="log"></div>
+    </div>
+
+    <script>
+        // Custom logging function
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${timestamp}] ${message}<br>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+        
+        // Initialize
+        log('🚀 Debug page loaded');
+        log('📍 Location: ' + window.location.href);
+        log('🌐 User Agent: ' + navigator.userAgent);
+        
+        // Test 1: Basic JavaScript
+        function runTest1() {
+            try {
+                log('🧪 Running Test 1: Basic JavaScript');
+                document.getElementById('test1-status').innerHTML = '<span class="success">✅ JavaScript is working!</span>';
+                log('✅ Test 1 passed');
+                alert('JavaScript is working!');
+            } catch (error) {
+                log('❌ Test 1 failed: ' + error.message);
+                document.getElementById('test1-status').innerHTML = '<span class="error">❌ Error: ' + error.message + '</span>';
+            }
+        }
+        
+        // Test 2: DOM Manipulation
+        function runTest2() {
+            try {
+                log('🧪 Running Test 2: DOM Manipulation');
+                const element = document.getElementById('test2-status');
+                element.innerHTML = '<span class="success">✅ DOM manipulation works!</span>';
+                element.style.backgroundColor = '#d4edda';
+                log('✅ Test 2 passed');
+            } catch (error) {
+                log('❌ Test 2 failed: ' + error.message);
+                document.getElementById('test2-status').innerHTML = '<span class="error">❌ Error: ' + error.message + '</span>';
+            }
+        }
+        
+        // Test 3: Network Request
+        function runTest3() {
+            try {
+                log('🧪 Running Test 3: Network Request');
+                document.getElementById('test3-status').innerHTML = '<span class="info">🔄 Testing network request...</span>';
+                
+                fetch('/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: 'admin@company.com',
+                        password: 'Admin123!'
+                    })
+                })
+                .then(response => {
+                    log('📡 Response status: ' + response.status);
+                    return response.json();
+                })
+                .then(data => {
+                    log('📡 Response data: ' + JSON.stringify(data));
+                    if (data.success) {
+                        document.getElementById('test3-status').innerHTML = '<span class="success">✅ Login successful!</span>';
+                        log('✅ Test 3 passed - Login successful');
+                    } else {
+                        document.getElementById('test3-status').innerHTML = '<span class="error">❌ Login failed: ' + data.error + '</span>';
+                        log('❌ Test 3 failed - Login failed: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    log('❌ Test 3 network error: ' + error.message);
+                    document.getElementById('test3-status').innerHTML = '<span class="error">❌ Network error: ' + error.message + '</span>';
+                });
+            } catch (error) {
+                log('❌ Test 3 failed: ' + error.message);
+                document.getElementById('test3-status').innerHTML = '<span class="error">❌ Error: ' + error.message + '</span>';
+            }
+        }
+        
+        // Auto-run basic tests
+        log('🔄 Auto-running basic tests...');
+        setTimeout(() => {
+            log('⏰ Auto-test timeout reached');
+            try {
+                document.getElementById('test1-status').innerHTML = '<span class="success">✅ Auto-test: JavaScript loaded</span>';
+                log('✅ Auto-test passed');
+            } catch (error) {
+                log('❌ Auto-test failed: ' + error.message);
+            }
+        }, 1000);
+        
+        log('✅ Debug script initialization complete');
+    </script>
+</body>
+</html>

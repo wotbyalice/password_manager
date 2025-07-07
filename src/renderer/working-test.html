@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Working Login Test</title>
+    <style>
+        body { 
+            font-family: Arial; 
+            padding: 20px; 
+            background: #f0f8ff;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .success { 
+            background: #d4edda; 
+            color: #155724; 
+            padding: 15px; 
+            border-radius: 5px; 
+            margin: 10px 0;
+        }
+        .error { 
+            background: #f8d7da; 
+            color: #721c24; 
+            padding: 15px; 
+            border-radius: 5px; 
+            margin: 10px 0;
+        }
+        .info { 
+            background: #d1ecf1; 
+            color: #0c5460; 
+            padding: 15px; 
+            border-radius: 5px; 
+            margin: 10px 0;
+        }
+        input { 
+            width: 100%; 
+            padding: 10px; 
+            margin: 10px 0; 
+            border: 1px solid #ddd; 
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        button { 
+            width: 100%; 
+            padding: 12px; 
+            background: #28a745; 
+            color: white; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        button:hover { 
+            background: #218838; 
+        }
+        .debug {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Password Manager - Working Test</h1>
+        
+        <div class="success">
+            <strong>✅ CORRECT CREDENTIALS IDENTIFIED!</strong><br>
+            Email: admin@company.com<br>
+            Password: admin123 (lowercase, no special chars)
+        </div>
+        
+        <h3>🧪 Test 1: Direct API Login (Correct Credentials)</h3>
+        <form action="/api/auth/login" method="POST">
+            <input type="hidden" name="email" value="admin@company.com">
+            <input type="hidden" name="password" value="admin123">
+            <button type="submit">Test API Login (Correct Password)</button>
+        </form>
+        
+        <h3>🧪 Test 2: AuthRoutes Login (Correct Credentials)</h3>
+        <form action="/login" method="POST">
+            <input type="hidden" name="email" value="admin@company.com">
+            <input type="hidden" name="password" value="admin123">
+            <button type="submit">Test AuthRoutes Login (Correct Password)</button>
+        </form>
+        
+        <h3>🧪 Test 3: Form Login Route (Correct Credentials)</h3>
+        <form action="/form-login" method="POST">
+            <input type="hidden" name="email" value="admin@company.com">
+            <input type="hidden" name="password" value="admin123">
+            <button type="submit">Test Form Login Route (Correct Password)</button>
+        </form>
+        
+        <h3>📝 Manual Login Form</h3>
+        <form action="/api/auth/login" method="POST">
+            <label>Email:</label>
+            <input type="email" name="email" value="admin@company.com" required>
+            
+            <label>Password:</label>
+            <input type="password" name="password" value="admin123" required>
+            
+            <button type="submit">Manual Login Test</button>
+        </form>
+        
+        <div class="debug">
+            <strong>Debug Info:</strong><br>
+            • Database Password Hash: $2a$10$1H/s91WLO5DxePLw8fjt0eyP.W4i5dXHc1xRCj.AxXQzuCYieUk.O<br>
+            • Original Password: admin123<br>
+            • Previous Wrong Password: Admin123!<br>
+            • Server: http://localhost:3001<br>
+            • Expected: Success response with JWT token
+        </div>
+        
+        <div class="info">
+            <strong>📋 What to expect:</strong><br>
+            • Successful login should return JSON with token and user data<br>
+            • Failed login shows "Invalid credentials" error<br>
+            • Check server logs for authentication attempts<br>
+            • Look for "AUTH login_success" vs "AUTH login_failed" messages
+        </div>
+    </div>
+</body>
+</html>
