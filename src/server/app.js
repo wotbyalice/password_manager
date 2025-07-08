@@ -273,7 +273,15 @@ app.get('/passwords/:id', async (req, res) => {
     const { getPasswordById } = require('./passwords/passwordService');
 
     const passwordId = parseInt(req.params.id);
-    console.log('🔧 Getting password with ID:', passwordId);
+    console.log('🔧 Getting password with ID:', passwordId, 'from params:', req.params.id);
+
+    if (!passwordId || isNaN(passwordId)) {
+      console.log('🔧 Invalid password ID provided:', req.params.id);
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid password ID'
+      });
+    }
 
     const password = await getPasswordById(passwordId);
     console.log('🔧 Password fetched successfully:', password ? 'found' : 'not found');

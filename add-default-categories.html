@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Default Categories</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .result { margin: 10px 0; padding: 10px; border-radius: 4px; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        button { padding: 10px 20px; margin: 5px; border: none; border-radius: 4px; cursor: pointer; background: #007bff; color: white; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Add Default Categories</h1>
+    <p>This will add the default categories to your password manager.</p>
+    
+    <button onclick="addDefaultCategories()">Add Default Categories</button>
+    <button onclick="clearResults()">Clear Results</button>
+    
+    <div id="results"></div>
+
+    <script>
+        let authToken = null;
+
+        function addResult(type, message) {
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.textContent = message;
+            document.getElementById('results').appendChild(div);
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        async function login() {
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'admin@company.com',
+                        password: 'admin123'
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success && data.token) {
+                    authToken = data.token;
+                    addResult('success', '✅ Logged in successfully');
+                    return true;
+                } else {
+                    addResult('error', '❌ Login failed: ' + (data.error || 'Unknown error'));
+                    return false;
+                }
+            } catch (error) {
+                addResult('error', '❌ Login error: ' + error.message);
+                return false;
+            }
+        }
+
+        async function addDefaultCategories() {
+            clearResults();
+            
+            // First login
+            const loginSuccess = await login();
+            if (!loginSuccess) return;
+
+            // Default categories to add
+            const defaultCategories = [
+                { name: 'Email', description: 'Email accounts and services', color: '#ef4444' },
+                { name: 'Social Media', description: 'Social networking platforms', color: '#8b5cf6' },
+                { name: 'Banking', description: 'Financial and banking services', color: '#059669' },
+                { name: 'Work', description: 'Business and productivity tools', color: '#0ea5e9' },
+                { name: 'WiFi', description: 'Network and WiFi credentials', color: '#f59e0b' },
+                { name: 'Servers', description: 'Server and infrastructure access', color: '#6366f1' },
+                { name: 'Software', description: 'Software licenses and accounts', color: '#ec4899' }
+            ];
+
+            addResult('success', `🚀 Adding ${defaultCategories.length} default categories...`);
+
+            let successCount = 0;
+            let errorCount = 0;
+
+            for (const category of defaultCategories) {
+                try {
+                    const response = await fetch('/api/passwords/categories', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${authToken}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(category)
+                    });
+
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        addResult('success', `✅ Created category: ${category.name}`);
+                        successCount++;
+                    } else {
+                        if (data.error && data.error.includes('already exists')) {
+                            addResult('success', `ℹ️ Category already exists: ${category.name}`);
+                            successCount++;
+                        } else {
+                            addResult('error', `❌ Failed to create ${category.name}: ${data.error}`);
+                            errorCount++;
+                        }
+                    }
+                } catch (error) {
+                    addResult('error', `❌ Error creating ${category.name}: ${error.message}`);
+                    errorCount++;
+                }
+
+                // Small delay between requests
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+
+            // Final summary
+            addResult('success', `🎉 Completed! ${successCount} categories ready, ${errorCount} errors`);
+            
+            if (successCount > 0) {
+                addResult('success', '🔄 Please refresh the main application to see your categories!');
+            }
+        }
+    </script>
+</body>
+</html>

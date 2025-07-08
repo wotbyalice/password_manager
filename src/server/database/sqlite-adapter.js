@@ -191,7 +191,15 @@ class SQLiteAdapter {
   }
 
   getPasswordById(id) {
+    console.log('🔧 SQLite Adapter: getPasswordById called with:', id, 'type:', typeof id);
     const passwordId = parseInt(id);
+    console.log('🔧 SQLite Adapter: parsed passwordId:', passwordId);
+
+    if (!id || isNaN(passwordId)) {
+      console.log('🔧 SQLite Adapter: Invalid ID provided');
+      return { rows: [], rowCount: 0 };
+    }
+
     const password = this.data.passwords.find(p => p.id === passwordId);
 
     if (!password) {
