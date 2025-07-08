@@ -192,10 +192,12 @@
 }
 
 .empty-state-icon {
-    font-size: 64px;
+    width: 64px;
+    height: 64px;
     margin: 0 auto 20px;
     opacity: 0.5;
     display: block;
+    fill: currentColor;
 }
 
 .empty-state h3 {
