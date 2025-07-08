@@ -343,6 +343,7 @@ if (!window.electronAPI) {
         updateUser: (id, data) => window.apiClient.updateUser(id, data),
         deleteUser: (id) => window.apiClient.deleteUser(id),
         getCategories: () => window.apiClient.getCategories(),
+        getCategoryStats: () => window.apiClient.getCategoryStats(),
         createCategory: (data) => window.apiClient.createCategory(data),
         updateCategory: (id, data) => window.apiClient.updateCategory(id, data),
         deleteCategory: (id) => window.apiClient.deleteCategory(id),

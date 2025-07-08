@@ -218,6 +218,54 @@ if (typeof window !== 'undefined' && !window.electronAPI) {
                 return { success: false, error: error.message };
             }
         },
+
+        async getCategoryStats() {
+            try {
+                console.log('📊 Browser getting category statistics');
+                const result = await apiClient.getCategoryStats();
+                console.log('✅ Browser category stats loaded:', result.data?.categories?.length || 0);
+                return result;
+            } catch (error) {
+                console.error('❌ Browser get category stats failed:', error);
+                return { success: false, error: error.message };
+            }
+        },
+
+        async createCategory(categoryData) {
+            try {
+                console.log('➕ Browser creating category:', categoryData);
+                const result = await apiClient.createCategory(categoryData);
+                console.log('✅ Browser category created successfully');
+                return result;
+            } catch (error) {
+                console.error('❌ Browser create category failed:', error);
+                return { success: false, error: error.message };
+            }
+        },
+
+        async updateCategory(id, categoryData) {
+            try {
+                console.log('✏️ Browser updating category:', id, categoryData);
+                const result = await apiClient.updateCategory(id, categoryData);
+                console.log('✅ Browser category updated successfully');
+                return result;
+            } catch (error) {
+                console.error('❌ Browser update category failed:', error);
+                return { success: false, error: error.message };
+            }
+        },
+
+        async deleteCategory(id) {
+            try {
+                console.log('🗑️ Browser deleting category:', id);
+                const result = await apiClient.deleteCategory(id);
+                console.log('✅ Browser category deleted successfully');
+                return result;
+            } catch (error) {
+                console.error('❌ Browser delete category failed:', error);
+                return { success: false, error: error.message };
+            }
+        },
         
         // Socket/Real-time methods (stub implementations for browser)
         async connectSocket(token) {
