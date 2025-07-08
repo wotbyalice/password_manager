@@ -416,6 +416,50 @@
                 </div>
             </form>
         </div>
+
+        <!-- Category Modal (Admin Only) -->
+        <div id="category-modal" class="modal hidden">
+            <div class="modal-header">
+                <h3 id="category-modal-title">Add Category</h3>
+                <button class="modal-close" id="category-modal-close">&times;</button>
+            </div>
+
+            <form id="category-form" class="modal-body">
+                <div class="form-group">
+                    <label for="category-name">Category Name *</label>
+                    <input type="text" id="category-name" name="name" required maxlength="100"
+                           placeholder="e.g., Email, Banking, Social Media">
+                </div>
+
+                <div class="form-group">
+                    <label for="category-description">Description</label>
+                    <textarea id="category-description" name="description" maxlength="500" rows="3"
+                              placeholder="Optional description for this category"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="category-color">Color</label>
+                    <div class="color-picker-container">
+                        <input type="color" id="category-color" name="color" value="#007bff">
+                        <div class="color-presets">
+                            <button type="button" class="color-preset" data-color="#ef4444" style="background-color: #ef4444;" title="Red"></button>
+                            <button type="button" class="color-preset" data-color="#f59e0b" style="background-color: #f59e0b;" title="Orange"></button>
+                            <button type="button" class="color-preset" data-color="#eab308" style="background-color: #eab308;" title="Yellow"></button>
+                            <button type="button" class="color-preset" data-color="#22c55e" style="background-color: #22c55e;" title="Green"></button>
+                            <button type="button" class="color-preset" data-color="#3b82f6" style="background-color: #3b82f6;" title="Blue"></button>
+                            <button type="button" class="color-preset" data-color="#8b5cf6" style="background-color: #8b5cf6;" title="Purple"></button>
+                            <button type="button" class="color-preset" data-color="#ec4899" style="background-color: #ec4899;" title="Pink"></button>
+                            <button type="button" class="color-preset" data-color="#6b7280" style="background-color: #6b7280;" title="Gray"></button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="category-cancel">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="category-save">Create Category</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <!-- Notification Container -->

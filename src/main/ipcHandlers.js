@@ -219,6 +219,30 @@ function setupIpcHandlers() {
     }
   });
 
+  ipcMain.handle('categories:update', async (event, id, data) => {
+    try {
+      const response = await api.put(`/passwords/categories/${id}`, data);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Failed to update category'
+      };
+    }
+  });
+
+  ipcMain.handle('categories:delete', async (event, id) => {
+    try {
+      const response = await api.delete(`/passwords/categories/${id}`);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Failed to delete category'
+      };
+    }
+  });
+
   // User management handlers (admin only)
   ipcMain.handle('users:get-all', async (event) => {
     try {

@@ -364,35 +364,243 @@ class CategoryManager {
     }
 
     /**
-     * Set up category modal events (placeholder)
+     * Set up category modal events
      */
     setupCategoryModal() {
-        // Modal setup will be implemented in Phase 3
-        console.log('CategoryManager: Modal setup placeholder');
+        const modal = document.getElementById('category-modal');
+        const overlay = document.getElementById('modal-overlay');
+        const form = document.getElementById('category-form');
+        const closeBtn = document.getElementById('category-modal-close');
+        const cancelBtn = document.getElementById('category-cancel');
+
+        if (!modal || !overlay || !form) {
+            console.warn('CategoryManager: Modal elements not found');
+            return;
+        }
+
+        // Close modal events
+        closeBtn?.addEventListener('click', () => this.hideCategoryModal());
+        cancelBtn?.addEventListener('click', () => this.hideCategoryModal());
+
+        // Close on overlay click
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                this.hideCategoryModal();
+            }
+        });
+
+        // Form submission
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleCategoryFormSubmit();
+        });
+
+        // Color preset selection
+        document.querySelectorAll('.color-preset').forEach(preset => {
+            preset.addEventListener('click', (e) => {
+                e.preventDefault();
+                const color = preset.dataset.color;
+                document.getElementById('category-color').value = color;
+                this.updateColorPresetSelection(color);
+            });
+        });
+
+        // Color input change
+        const colorInput = document.getElementById('category-color');
+        colorInput?.addEventListener('change', (e) => {
+            this.updateColorPresetSelection(e.target.value);
+        });
     }
 
     /**
-     * Show add category modal (placeholder)
+     * Show add category modal
      */
     showAddCategoryModal() {
-        console.log('CategoryManager: Add category modal - to be implemented');
-        // Will be implemented in Phase 3
+        this.editingCategoryId = null;
+        this.resetCategoryForm();
+
+        document.getElementById('category-modal-title').textContent = 'Add Category';
+        document.getElementById('category-save').textContent = 'Create Category';
+
+        this.showCategoryModal();
     }
 
     /**
-     * Show edit category modal (placeholder)
+     * Show edit category modal
      */
     showEditCategoryModal(categoryId) {
-        console.log('CategoryManager: Edit category modal - to be implemented', categoryId);
-        // Will be implemented in Phase 3
+        const category = this.categories.find(cat => cat.id === categoryId);
+        if (!category) {
+            console.error('CategoryManager: Category not found for editing:', categoryId);
+            return;
+        }
+
+        this.editingCategoryId = categoryId;
+        this.populateCategoryForm(category);
+
+        document.getElementById('category-modal-title').textContent = 'Edit Category';
+        document.getElementById('category-save').textContent = 'Update Category';
+
+        this.showCategoryModal();
     }
 
     /**
-     * Confirm delete category (placeholder)
+     * Show category modal
      */
-    confirmDeleteCategory(categoryId) {
-        console.log('CategoryManager: Delete confirmation - to be implemented', categoryId);
-        // Will be implemented in Phase 3
+    showCategoryModal() {
+        const modal = document.getElementById('category-modal');
+        const overlay = document.getElementById('modal-overlay');
+
+        if (modal && overlay) {
+            overlay.classList.remove('hidden');
+            modal.classList.remove('hidden');
+
+            // Focus on name input
+            setTimeout(() => {
+                document.getElementById('category-name')?.focus();
+            }, 100);
+        }
+    }
+
+    /**
+     * Hide category modal
+     */
+    hideCategoryModal() {
+        const modal = document.getElementById('category-modal');
+        const overlay = document.getElementById('modal-overlay');
+
+        if (modal && overlay) {
+            modal.classList.add('hidden');
+            overlay.classList.add('hidden');
+            this.resetCategoryForm();
+        }
+    }
+
+    /**
+     * Reset category form
+     */
+    resetCategoryForm() {
+        const form = document.getElementById('category-form');
+        if (form) {
+            form.reset();
+            document.getElementById('category-color').value = '#007bff';
+            this.updateColorPresetSelection('#007bff');
+        }
+    }
+
+    /**
+     * Populate category form with existing data
+     */
+    populateCategoryForm(category) {
+        document.getElementById('category-name').value = category.name || '';
+        document.getElementById('category-description').value = category.description || '';
+        document.getElementById('category-color').value = category.color || '#007bff';
+        this.updateColorPresetSelection(category.color || '#007bff');
+    }
+
+    /**
+     * Update color preset selection visual state
+     */
+    updateColorPresetSelection(selectedColor) {
+        document.querySelectorAll('.color-preset').forEach(preset => {
+            if (preset.dataset.color === selectedColor) {
+                preset.classList.add('selected');
+            } else {
+                preset.classList.remove('selected');
+            }
+        });
+    }
+
+    /**
+     * Handle category form submission
+     */
+    async handleCategoryFormSubmit() {
+        const form = document.getElementById('category-form');
+        const formData = new FormData(form);
+
+        const categoryData = {
+            name: formData.get('name').trim(),
+            description: formData.get('description').trim(),
+            color: formData.get('color')
+        };
+
+        // Validate
+        if (!categoryData.name) {
+            this.showNotification('Category name is required', 'error');
+            return;
+        }
+
+        try {
+            let result;
+            if (this.editingCategoryId) {
+                // Update existing category
+                result = await electronAPI.updateCategory(this.editingCategoryId, categoryData);
+            } else {
+                // Create new category
+                result = await electronAPI.createCategory(categoryData);
+            }
+
+            if (result.success) {
+                this.showNotification(
+                    this.editingCategoryId ? 'Category updated successfully' : 'Category created successfully',
+                    'success'
+                );
+                this.hideCategoryModal();
+                await this.loadCategories(); // Reload categories
+            } else {
+                this.showNotification(result.error || 'Operation failed', 'error');
+            }
+        } catch (error) {
+            console.error('CategoryManager: Form submission error:', error);
+            this.showNotification('An error occurred', 'error');
+        }
+    }
+
+    /**
+     * Confirm delete category
+     */
+    async confirmDeleteCategory(categoryId) {
+        const category = this.categories.find(cat => cat.id === categoryId);
+        if (!category) {
+            console.error('CategoryManager: Category not found for deletion:', categoryId);
+            return;
+        }
+
+        const passwordCount = category.passwordCount || 0;
+        let message = `Are you sure you want to delete the category "${category.name}"?`;
+
+        if (passwordCount > 0) {
+            message += `\n\nThis category is used by ${passwordCount} password${passwordCount > 1 ? 's' : ''}. Those passwords will no longer have a category assigned.`;
+        }
+
+        if (confirm(message)) {
+            try {
+                const result = await electronAPI.deleteCategory(categoryId);
+
+                if (result.success) {
+                    this.showNotification('Category deleted successfully', 'success');
+                    await this.loadCategories(); // Reload categories
+                } else {
+                    this.showNotification(result.error || 'Failed to delete category', 'error');
+                }
+            } catch (error) {
+                console.error('CategoryManager: Delete error:', error);
+                this.showNotification('An error occurred while deleting', 'error');
+            }
+        }
+    }
+
+    /**
+     * Show notification
+     */
+    showNotification(message, type = 'info') {
+        // Use the global notification system if available
+        if (window.app && window.app.showNotification) {
+            window.app.showNotification(message, type);
+        } else {
+            // Fallback to alert
+            alert(message);
+        }
     }
 
     /**
