@@ -1,0 +1,28 @@
+<svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+  <!-- Main circle -->
+  <circle cx="24" cy="24" r="23" fill="none" stroke="#333" stroke-width="1"/>
+
+  <!-- Sun rays -->
+  <g stroke="#FFD700" stroke-width="3" stroke-linecap="round">
+    <line x1="6" y1="12" x2="12" y2="15"/>
+    <line x1="4" y1="18" x2="10" y2="19"/>
+    <line x1="3" y1="24" x2="9" y2="24"/>
+    <line x1="4" y1="30" x2="10" y2="29"/>
+    <line x1="6" y1="36" x2="12" y2="33"/>
+    <line x1="10" y1="40" x2="14" y2="36"/>
+    <line x1="16" y1="42" x2="18" y2="38"/>
+  </g>
+
+  <!-- Sun semicircle -->
+  <path d="M 12 24 A 12 12 0 0 1 36 24 Z" fill="#FFD700"/>
+
+  <!-- Water section -->
+  <path d="M 12 24 A 12 12 0 0 0 36 24 Z" fill="#00BCD4"/>
+
+  <!-- Flowing water lines -->
+  <path d="M 15 28 Q 20 26 25 28 Q 30 30 35 28" stroke="#0097A7" stroke-width="2" fill="none"/>
+  <path d="M 16 32 Q 21 30 26 32 Q 31 34 34 32" stroke="#0097A7" stroke-width="2" fill="none"/>
+
+  <!-- Sun center highlight -->
+  <circle cx="24" cy="18" r="3" fill="#FFF59D" opacity="0.8"/>
+</svg>
