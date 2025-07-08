@@ -19,6 +19,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Categories
   getCategories: () => ipcRenderer.invoke('categories:get-all'),
+  getCategoryStats: () => ipcRenderer.invoke('categories:get-stats'),
   createCategory: (data) => ipcRenderer.invoke('categories:create', data),
   updateCategory: (id, data) => ipcRenderer.invoke('categories:update', id, data),
   deleteCategory: (id) => ipcRenderer.invoke('categories:delete', id),

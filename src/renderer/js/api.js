@@ -276,6 +276,11 @@ class APIClient {
         return this.request('/categories');
     }
 
+    async getCategoryStats() {
+        console.log('API Client: getCategoryStats called');
+        return this.request('/passwords/categories/stats');
+    }
+
     async createCategory(categoryData) {
         console.log('API Client: createCategory called with:', categoryData);
         return this.request('/passwords/categories', {

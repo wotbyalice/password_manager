@@ -188,9 +188,21 @@ function setupIpcHandlers() {
       const response = await api.get('/passwords/categories');
       return { success: true, data: response.data };
     } catch (error) {
-      return { 
-        success: false, 
-        error: error.response?.data?.error || 'Failed to fetch categories' 
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Failed to fetch categories'
+      };
+    }
+  });
+
+  ipcMain.handle('categories:get-stats', async (event) => {
+    try {
+      const response = await api.get('/passwords/categories/stats');
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Failed to fetch category statistics'
       };
     }
   });

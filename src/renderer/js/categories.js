@@ -214,15 +214,21 @@ class CategoryManager {
             this.isLoading = true;
             this.renderLoadingState();
 
-            console.log('CategoryManager: Loading categories...');
+            console.log('CategoryManager: Loading categories with statistics...');
 
-            // Use the existing categoriesManager to get data
-            if (window.categoriesManager) {
-                await window.categoriesManager.loadCategories();
-                this.categories = window.categoriesManager.getCategories();
+            // Get categories with password counts
+            const result = await electronAPI.getCategoryStats();
+
+            if (result.success) {
+                this.categories = result.data.categories || [];
+                console.log('CategoryManager: Categories loaded:', this.categories.length);
+            } else {
+                console.error('CategoryManager: Failed to load categories:', result.error);
+                this.categories = [];
+                this.renderErrorState(result.error);
+                return;
             }
 
-            console.log('CategoryManager: Categories loaded:', this.categories.length);
             this.renderCategories();
 
         } catch (error) {
