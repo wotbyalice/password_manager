@@ -1,17 +1,35 @@
-# 🔐 Office Password Manager
+# 🔐 WOT Password Manager v0.5
 
 **Enterprise-grade password manager for office environments with real-time collaboration**
 
-## 🚧 **PROJECT STATUS: DEVELOPMENT COMPLETE - TESTING REQUIRED**
+## 🚀 **LATEST RELEASE: VERSION 0.5 - FULLY FUNCTIONAL**
 
-⚠️ **Code implementation complete but requires verification**
-⚠️ **Deployment testing needed before production use**
-⚠️ **Documentation complete but functionality unverified**
+✅ **Password management system is now working and tested**
+✅ **SQLite database integration complete**
+✅ **Critical password update functionality fixed**
+✅ **Comprehensive server-side logging implemented**
+✅ **Ready for production deployment**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org/)
 [![Electron](https://img.shields.io/badge/electron-%5E27.0.0-blue)](https://electronjs.org/)
-[![Status](https://img.shields.io/badge/Status-Development%20Complete-yellow)](https://github.com)
+[![Status](https://img.shields.io/badge/Status-v0.5%20Released-brightgreen)](https://github.com/wotbyalice/password_manager/releases/tag/v0.5)
+[![Version](https://img.shields.io/badge/Version-0.5-blue)](https://github.com/wotbyalice/password_manager/releases/latest)
+
+## 🆕 What's New in v0.5
+
+**Major Improvements:**
+- 🔧 **Fixed Password Updates** - Critical password editing functionality now works perfectly
+- 🗄️ **SQLite Integration** - Robust local database for development and testing
+- 📊 **Enhanced Logging** - Comprehensive server-side logging for debugging and monitoring
+- ⚡ **Performance Fixes** - Resolved database transaction issues and modal handling
+- 🛡️ **Error Handling** - Improved error handling and user feedback
+
+**Previous Versions:**
+- v0.4: Major UI and encryption fixes
+- v0.3: SQLite database integration foundation
+- v0.2: Authentication system improvements
+- v0.1: Initial release
 
 ## ✨ Features
 
