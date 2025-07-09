@@ -4,6 +4,8 @@
  */
 
 const ConfigService = require('../services/ConfigService');
+const ServiceRegistry = require('./ServiceRegistry');
+const PasswordServiceImpl = require('../services/PasswordServiceImpl');
 
 /**
  * Service factory functions
@@ -98,19 +100,28 @@ const serviceFactories = {
   },
 
   /**
+   * Service registry factory
+   * @param {DIContainer} container - DI container
+   * @returns {ServiceRegistry} Service registry instance
+   */
+  serviceRegistry: (container) => {
+    const logger = container.resolve('logger');
+    return new ServiceRegistry(logger);
+  },
+
+  /**
    * Password service factory
    * @param {DIContainer} container - DI container
-   * @returns {PasswordService} Password service instance
+   * @returns {PasswordServiceImpl} Password service instance
    */
   passwordService: (container) => {
-    const PasswordService = require('../services/PasswordService');
     const database = container.resolve('database');
     const encryption = container.resolve('encryption');
     const validation = container.resolve('validation');
     const logger = container.resolve('logger');
     const eventBus = container.resolve('eventBus');
-    
-    return new PasswordService(database, encryption, validation, logger, eventBus);
+
+    return new PasswordServiceImpl(database, encryption, validation, logger, eventBus);
   },
 
   /**
@@ -180,6 +191,7 @@ function registerServices(container) {
   // Core infrastructure services (singletons)
   container.register('config', serviceFactories.config, { singleton: true });
   container.register('logger', serviceFactories.logger, { singleton: true });
+  container.register('serviceRegistry', serviceFactories.serviceRegistry, { singleton: true });
   container.register('database', serviceFactories.database, { singleton: true });
   container.register('encryption', serviceFactories.encryption, { singleton: true });
   container.register('validation', serviceFactories.validation, { singleton: true });
