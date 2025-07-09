@@ -185,9 +185,84 @@ class CategoryManager {
      * Initialize category manager
      */
     async init() {
-        console.log('CategoryManager: Initializing...');
+        console.log('🔧 CategoryManager: Initializing...');
+
+        // Send initialization log to server
+        if (window.logger) {
+            window.logger.info('CategoryManager initialization started', {
+                timestamp: new Date().toISOString(),
+                userAgent: navigator.userAgent.substring(0, 50)
+            });
+        }
+
         this.setupEventListeners();
+        this.ensureAddButtonVisible();
         await this.loadCategories();
+
+        // Send completion log to server
+        if (window.logger) {
+            window.logger.info('CategoryManager initialization completed', {
+                timestamp: new Date().toISOString(),
+                categoriesCount: this.categories.length
+            });
+        }
+    }
+
+    /**
+     * Ensure the Add Category button is visible
+     */
+    ensureAddButtonVisible() {
+        const addButton = document.getElementById('add-category-btn');
+        const viewHeader = document.querySelector('#categories-view .view-header');
+        const bodyHasAdminClass = document.body.classList.contains('admin');
+        const bodyClasses = document.body.className;
+
+        console.log('🔧 CategoryManager: Checking Add Category button visibility');
+        console.log('🔧 Add button found:', !!addButton);
+        console.log('🔧 View header found:', !!viewHeader);
+        console.log('🔧 Body has admin class:', bodyHasAdminClass);
+        console.log('🔧 Body classes:', bodyClasses);
+
+        if (addButton) {
+            const computedStyle = window.getComputedStyle(addButton);
+            console.log('🔧 Button computed display:', computedStyle.display);
+            console.log('🔧 Button computed visibility:', computedStyle.visibility);
+            console.log('🔧 Button classes:', addButton.className);
+        }
+
+        // Send detailed button visibility log to server
+        if (window.logger) {
+            window.logger.info('Add Category button visibility check', {
+                addButtonExists: !!addButton,
+                viewHeaderExists: !!viewHeader,
+                bodyHasAdminClass: bodyHasAdminClass,
+                bodyClasses: bodyClasses,
+                addButtonDisplay: addButton ? addButton.style.display : 'N/A',
+                addButtonVisibility: addButton ? addButton.style.visibility : 'N/A',
+                addButtonClasses: addButton ? addButton.className : 'N/A',
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        if (addButton) {
+            // Force the button to be visible for admin users
+            if (bodyHasAdminClass) {
+                addButton.style.display = 'inline-flex !important';
+                addButton.style.visibility = 'visible !important';
+                addButton.style.opacity = '1 !important';
+                addButton.classList.remove('hidden');
+                console.log('🔧 FORCED Add Category button visibility for admin user');
+                console.log('🔧 Button final style:', addButton.style.cssText);
+            } else {
+                addButton.style.display = 'none';
+                console.log('🔧 Hidden Add Category button for non-admin user');
+            }
+        }
+
+        if (viewHeader) {
+            viewHeader.style.display = 'flex';
+            console.log('🔧 View header made visible');
+        }
     }
 
     /**
@@ -249,8 +324,19 @@ class CategoryManager {
             return;
         }
 
+        // Ensure the Add Category button is always visible
+        this.ensureAddButtonVisible();
+
         if (this.categories.length === 0) {
             grid.innerHTML = this.renderEmptyState();
+
+            // Show the temporary fallback button for admin users
+            const tempButton = document.getElementById('temp-add-category');
+            const bodyHasAdminClass = document.body.classList.contains('admin');
+            if (tempButton && bodyHasAdminClass) {
+                tempButton.style.display = 'block';
+                console.log('🔧 Showing temporary Add Category button for admin');
+            }
             return;
         }
 
@@ -615,8 +701,20 @@ class CategoryManager {
 }
 
 // Create global instances
+console.log('🔧 Creating global CategoriesManager instance...');
 window.categoriesManager = new CategoriesManager();
 window.CategoryManager = CategoryManager;
 
-// Also create a global instance for immediate use
-window.categoryManager = null; // Will be created by app.js
+// Create a global instance for immediate use (will be replaced by app.js if needed)
+console.log('🔧 Creating global CategoryManager instance...');
+window.categoryManager = new CategoryManager();
+
+// Send creation log to server if logger is available
+if (window.logger) {
+    window.logger.info('Global CategoryManager instances created', {
+        categoriesManagerExists: !!window.categoriesManager,
+        CategoryManagerClassExists: !!window.CategoryManager,
+        categoryManagerInstanceExists: !!window.categoryManager,
+        timestamp: new Date().toISOString()
+    });
+}

@@ -78,6 +78,11 @@ class PasswordManager {
             }
         });
 
+        // Prevent modal content clicks from bubbling to overlay
+        modal?.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+
         // Form submission
         form?.addEventListener('submit', (e) => {
             e.preventDefault();
@@ -612,9 +617,14 @@ class PasswordManager {
     }
 
     closePasswordModal() {
+        console.log('🔧 MODAL: closePasswordModal called', {
+            editingPasswordId: this.editingPasswordId,
+            stack: new Error().stack
+        });
+
         document.getElementById('modal-overlay').classList.add('hidden');
         document.getElementById('password-modal').classList.add('hidden');
-        
+
         if (this.editingPasswordId) {
             electronAPI.stopEditing(this.editingPasswordId);
             this.editingPasswordId = null;

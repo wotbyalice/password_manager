@@ -417,8 +417,37 @@ app.get('/api/admin/users', (req, res) => {
   });
 });
 
-// Serve static files (both development and production)
-app.use(express.static(path.join(__dirname, '../renderer')));
+// Log requests for debugging categories issue
+app.use((req, res, next) => {
+  if (req.url.includes('categories') || req.url.includes('admin') || req.url === '/' || req.url.includes('.js')) {
+    logger.info(`🔍 REQUEST: ${req.method} ${req.url}`, {
+      userAgent: req.get('User-Agent')?.substring(0, 50),
+      hasAuth: !!req.headers.authorization,
+      ip: req.ip
+    });
+  }
+  next();
+});
+
+// Serve static files (both development and production) with specific logging
+app.use(express.static(path.join(__dirname, '../renderer'), {
+  setHeaders: (res, path, stat) => {
+    if (path.includes('categories.js')) {
+      logger.info(`📄 SERVING categories.js file`, {
+        path: path,
+        size: stat.size,
+        timestamp: new Date().toISOString()
+      });
+    }
+    if (path.includes('index.html')) {
+      logger.info(`📄 SERVING index.html file`, {
+        path: path,
+        size: stat.size,
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+}));
 
 // API status endpoint (moved to /api/status to avoid conflict)
 app.get('/api/status', (req, res) => {
@@ -436,6 +465,25 @@ app.get('/health', (req, res) => {
   res.json({
     success: true,
     status: 'healthy',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Debug endpoint to check admin status
+app.get('/debug/admin-status', authenticateToken, (req, res) => {
+  logger.info(`🔍 ADMIN STATUS CHECK`, {
+    userId: req.user?.userId,
+    email: req.user?.email,
+    role: req.user?.role,
+    isAdmin: req.user?.role === 'admin',
+    hasUser: !!req.user,
+    timestamp: new Date().toISOString()
+  });
+
+  res.json({
+    success: true,
+    user: req.user,
+    isAdmin: req.user?.role === 'admin',
     timestamp: new Date().toISOString()
   });
 });

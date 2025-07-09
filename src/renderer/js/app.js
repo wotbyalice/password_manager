@@ -106,6 +106,20 @@ class PasswordManagerApp {
             // Show admin-only elements if user is admin
             if (this.currentUser.role === 'admin') {
                 document.body.classList.add('admin');
+                console.log('🔐 Admin class added to body for user:', this.currentUser.email);
+
+                // Send admin class application log to server
+                if (window.logger) {
+                    window.logger.info('Admin class applied to body', {
+                        userId: this.currentUser.id,
+                        email: this.currentUser.email,
+                        role: this.currentUser.role,
+                        bodyClasses: document.body.className,
+                        timestamp: new Date().toISOString()
+                    });
+                }
+            } else {
+                console.log('🔐 User is not admin, no admin class added:', this.currentUser.role);
             }
         }
     }

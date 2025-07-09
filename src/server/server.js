@@ -30,8 +30,16 @@ async function startServer() {
     // Make io available to the app
     app.set('io', io);
 
+    // Clear module cache for password service and SQLite adapter to ensure latest code is loaded
+    const passwordServicePath = require.resolve('./passwords/passwordService.js');
+    const sqliteAdapterPath = require.resolve('./database/sqlite-adapter.js');
+    delete require.cache[passwordServicePath];
+    delete require.cache[sqliteAdapterPath];
+    console.log('🔧 SERVER: Cleared password service and SQLite adapter module cache');
+
     // Start server
     const server = httpServer.listen(PORT, () => {
+      console.log('🔧 SERVER: Server starting with FORCE UPDATED code...');
       logger.info(`Server started successfully`, {
         port: PORT,
         environment: process.env.NODE_ENV || 'development',

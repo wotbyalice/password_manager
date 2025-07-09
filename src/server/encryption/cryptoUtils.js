@@ -64,28 +64,40 @@ function encryptPassword(password) {
  */
 function decryptPassword(encryptedPassword) {
   try {
+    console.log('🔧 CRYPTO: decryptPassword called with:', {
+      type: typeof encryptedPassword,
+      length: encryptedPassword ? encryptedPassword.length : 0,
+      value: encryptedPassword ? encryptedPassword.substring(0, 50) + '...' : 'null/undefined'
+    });
+
     if (!encryptedPassword || typeof encryptedPassword !== 'string') {
+      console.error('🔧 CRYPTO: Invalid encrypted password input');
       throw new Error('Encrypted password must be a non-empty string');
     }
 
-    console.log('🔧 Decrypting password, length:', encryptedPassword.length);
+    console.log('🔧 CRYPTO: Decrypting password, length:', encryptedPassword.length);
 
     // For demo purposes, try simple base64 decoding first
     try {
       const decoded = Buffer.from(encryptedPassword, 'base64').toString('utf8');
+      console.log('🔧 CRYPTO: Base64 decoded result:', decoded.substring(0, 20) + '...');
       // If it looks like readable text, it's probably our demo base64 encoding
       if (decoded.length > 0 && decoded.length < 100 && /^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{}|;:,.<>?]+$/.test(decoded)) {
-        console.log('🔧 Using simple base64 decoding for password');
+        console.log('🔧 CRYPTO: Using simple base64 decoding for password');
         return decoded;
       }
     } catch (e) {
-      console.log('🔧 Simple base64 decoding failed, trying AES decryption');
+      console.log('🔧 CRYPTO: Simple base64 decoding failed, trying AES decryption:', e.message);
     }
 
+    console.log('🔧 CRYPTO: Attempting AES decryption...');
     const key = getEncryptionKey();
     const combined = Buffer.from(encryptedPassword, 'base64');
 
+    console.log('🔧 CRYPTO: Combined buffer length:', combined.length, 'IV_LENGTH:', IV_LENGTH);
+
     if (combined.length < IV_LENGTH) {
+      console.error('🔧 CRYPTO: Encrypted data too short');
       throw new Error('Encrypted data too short');
     }
 
@@ -93,7 +105,7 @@ function decryptPassword(encryptedPassword) {
     const iv = combined.slice(0, IV_LENGTH);
     const encrypted = combined.slice(IV_LENGTH);
 
-    console.log('🔧 IV length:', iv.length, 'Encrypted length:', encrypted.length);
+    console.log('🔧 CRYPTO: IV length:', iv.length, 'Encrypted length:', encrypted.length);
 
     const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
 

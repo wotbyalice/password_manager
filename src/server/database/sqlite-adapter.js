@@ -46,57 +46,81 @@ class SQLiteAdapter {
 
   // Simulate SQL query interface
   async query(sql, params = []) {
+    console.log('🔧 SQLITE ADAPTER: Query called with SQL:', sql);
+    console.log('🔧 SQLITE ADAPTER: Query params:', params);
+
     const sqlLower = sql.toLowerCase().trim();
 
     if (sqlLower.includes('create table')) {
       // Tables are automatically created in our JSON structure
+      console.log('🔧 SQLITE ADAPTER: Handling CREATE TABLE');
       return { rows: [], rowCount: 0 };
     }
 
     if (sqlLower.includes('select now()')) {
+      console.log('🔧 SQLITE ADAPTER: Handling SELECT NOW()');
       return { rows: [{ current_time: new Date().toISOString() }] };
     }
-    
+
     if (sqlLower.includes('insert into users')) {
+      console.log('🔧 SQLITE ADAPTER: Handling INSERT INTO users');
       return this.insertUser(params);
     }
-    
+
     if (sqlLower.includes('select') && sqlLower.includes('from users') && sqlLower.includes('where email')) {
+      console.log('🔧 SQLITE ADAPTER: Handling SELECT user by email');
       return this.findUserByEmail(params[0]);
     }
 
     if (sqlLower.includes('select') && sqlLower.includes('from users') && sqlLower.includes('where id')) {
+      console.log('🔧 SQLITE ADAPTER: Handling SELECT user by ID');
       return this.findUserById(params[0]);
     }
-    
+
     if (sqlLower.includes('insert into passwords') || sqlLower.includes('insert into password_entries')) {
+      console.log('🔧 SQLITE ADAPTER: Handling INSERT INTO password_entries');
       return this.insertPassword(params);
     }
-    
+
     if (sqlLower.includes('select count(*) from password_entries')) {
+      console.log('🔧 SQLITE ADAPTER: Handling SELECT COUNT from password_entries');
       return this.getPasswordCount(params);
     }
 
     // Handle individual password retrieval by ID
     if (sqlLower.includes('from password_entries') && sqlLower.includes('where id = $1')) {
+      console.log('🔧 SQLITE ADAPTER: Handling SELECT password by ID');
+      console.log('🔧 SQLITE ADAPTER: params array:', params);
+      console.log('🔧 SQLITE ADAPTER: params[0]:', params ? params[0] : 'params is null/undefined');
+
+      if (!params || params.length === 0 || params[0] === undefined) {
+        console.error('🔧 SQLITE ADAPTER: No valid ID parameter provided');
+        return { rows: [], rowCount: 0 };
+      }
+
       return this.getPasswordById(params[0]);
     }
 
     if (sqlLower.includes('select * from passwords') || sqlLower.includes('from password_entries')) {
+      console.log('🔧 SQLITE ADAPTER: Handling SELECT all passwords');
       return this.getPasswords(params);
     }
 
     // Handle password updates (UPDATE password_entries SET ...)
     if (sqlLower.includes('update password_entries') && sqlLower.includes('set') && !sqlLower.includes('is_deleted = true')) {
+      console.log('🔧 SQLITE ADAPTER: Handling UPDATE password_entries');
+      console.log('🔧 SQLITE ADAPTER: Update params:', params);
       return this.updatePassword(params);
     }
 
     // Handle password deletion (soft delete: UPDATE password_entries SET is_deleted = true)
     if (sqlLower.includes('update password_entries') && sqlLower.includes('is_deleted = true')) {
+      console.log('🔧 SQLITE ADAPTER: Handling DELETE password_entries (soft delete)');
       return this.deletePassword(params);
     }
-    
+
     // Default response for unhandled queries
+    console.log('🔧 SQLITE ADAPTER: Unhandled query, returning empty result');
     return { rows: [], rowCount: 0 };
   }
 
@@ -192,30 +216,47 @@ class SQLiteAdapter {
 
   getPasswordById(id) {
     console.log('🔧 SQLite Adapter: getPasswordById called with:', id, 'type:', typeof id);
+
+    // Handle undefined or null id
+    if (id === undefined || id === null) {
+      console.error('🔧 SQLite Adapter: ID is undefined or null');
+      return { rows: [], rowCount: 0 };
+    }
+
     const passwordId = parseInt(id);
     console.log('🔧 SQLite Adapter: parsed passwordId:', passwordId);
 
-    if (!id || isNaN(passwordId)) {
-      console.log('🔧 SQLite Adapter: Invalid ID provided');
+    if (isNaN(passwordId)) {
+      console.log('🔧 SQLite Adapter: Invalid ID provided - not a number');
       return { rows: [], rowCount: 0 };
     }
+
+    console.log('🔧 SQLite Adapter: Searching for password with ID:', passwordId);
+    console.log('🔧 SQLite Adapter: Available passwords:', this.data.passwords.map(p => ({ id: p.id, title: p.title })));
 
     const password = this.data.passwords.find(p => p.id === passwordId);
+    console.log('🔧 SQLite Adapter: found password:', password ? 'yes' : 'no');
 
     if (!password) {
+      console.log('🔧 SQLite Adapter: Password not found');
       return { rows: [], rowCount: 0 };
     }
 
-    // Convert our JSON structure to match expected database structure
-    const fakeEncrypted = Buffer.from(password.password).toString('base64');
+    console.log('🔧 SQLite Adapter: Found password:', {
+      id: password.id,
+      title: password.title,
+      hasEncryptedPassword: !!password.encrypted_password
+    });
 
+    // Convert our JSON structure to match expected database structure
+    // Use the stored encrypted_password directly instead of re-encrypting
     const convertedPassword = {
       id: password.id,
       title: password.title,
       username: password.username,
-      password_encrypted: fakeEncrypted,
-      url_encrypted: password.url ? Buffer.from(password.url).toString('base64') : null,
-      notes_encrypted: password.notes ? Buffer.from(password.notes).toString('base64') : null,
+      password_encrypted: password.encrypted_password,
+      url_encrypted: password.url,
+      notes_encrypted: password.notes,
       category: password.category,
       created_by: password.user_id,
       updated_by: password.user_id,
@@ -224,6 +265,7 @@ class SQLiteAdapter {
       is_deleted: false
     };
 
+    console.log('🔧 SQLite Adapter: returning converted password with encrypted data');
     return { rows: [convertedPassword], rowCount: 1 };
   }
 
@@ -240,11 +282,17 @@ class SQLiteAdapter {
   }
 
   updatePassword(params) {
+    console.log('🔧 SQLITE ADAPTER: updatePassword called with params:', params);
+
     // For UPDATE password_entries queries, the last parameter is the password ID
     const passwordId = parseInt(params[params.length - 1]);
+    console.log('🔧 SQLITE ADAPTER: Updating password ID:', passwordId);
+
     const passwordIndex = this.data.passwords.findIndex(p => p.id === passwordId);
+    console.log('🔧 SQLITE ADAPTER: Found password at index:', passwordIndex);
 
     if (passwordIndex === -1) {
+      console.log('🔧 SQLITE ADAPTER: Password not found');
       return { rows: [], rowCount: 0 };
     }
 
@@ -252,19 +300,27 @@ class SQLiteAdapter {
     const updateValues = params.slice(0, -1);
     const password = this.data.passwords[passwordIndex];
 
+    console.log('🔧 SQLITE ADAPTER: Update values:', updateValues);
+    console.log('🔧 SQLITE ADAPTER: Current password:', {
+      id: password.id,
+      title: password.title,
+      hasEncryptedPassword: !!password.encrypted_password
+    });
+
     // Update the password with new values
     // The order depends on what fields are being updated
     // For now, we'll handle the most common case: title, username, password, url, notes, category
     if (updateValues.length >= 6) {
       const [title, username, encryptedPassword, urlEncrypted, notesEncrypted, category] = updateValues;
 
+      console.log('🔧 SQLITE ADAPTER: Updating with encrypted data directly');
       this.data.passwords[passwordIndex] = {
         ...password,
         title: title || password.title,
         username: username || password.username,
-        password: encryptedPassword ? Buffer.from(encryptedPassword, 'base64').toString() : password.password,
-        url: urlEncrypted ? Buffer.from(urlEncrypted, 'base64').toString() : password.url,
-        notes: notesEncrypted ? Buffer.from(notesEncrypted, 'base64').toString() : password.notes,
+        encrypted_password: encryptedPassword || password.encrypted_password,
+        url: urlEncrypted || password.url,
+        notes: notesEncrypted || password.notes,
         category: category || password.category,
         updated_at: new Date().toISOString()
       };
@@ -274,15 +330,20 @@ class SQLiteAdapter {
 
     // Return in expected database format
     const updatedPassword = this.data.passwords[passwordIndex];
-    const fakeEncrypted = Buffer.from(updatedPassword.password).toString('base64');
+    console.log('🔧 SQLITE ADAPTER: Updated password object:', {
+      id: updatedPassword.id,
+      title: updatedPassword.title,
+      hasEncryptedPassword: !!updatedPassword.encrypted_password,
+      hasOldPassword: !!updatedPassword.password
+    });
 
     const convertedPassword = {
       id: updatedPassword.id,
       title: updatedPassword.title,
       username: updatedPassword.username,
-      password_encrypted: fakeEncrypted,
-      url_encrypted: updatedPassword.url ? Buffer.from(updatedPassword.url).toString('base64') : null,
-      notes_encrypted: updatedPassword.notes ? Buffer.from(updatedPassword.notes).toString('base64') : null,
+      password_encrypted: updatedPassword.encrypted_password,
+      url_encrypted: updatedPassword.url,
+      notes_encrypted: updatedPassword.notes,
       category: updatedPassword.category,
       created_by: updatedPassword.user_id,
       updated_by: updatedPassword.user_id,

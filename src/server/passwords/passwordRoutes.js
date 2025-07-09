@@ -256,26 +256,36 @@ router.post('/categories', requireAdmin, async (req, res) => {
  */
 router.get('/:id', async (req, res) => {
   try {
+    console.log('🔧 PASSWORD ROUTE: GET /:id called with params:', req.params);
+    console.log('🔧 PASSWORD ROUTE: User info:', req.user);
+
     const passwordId = parseInt(req.params.id);
     const clientIP = req.ip || req.connection.remoteAddress;
     const userAgent = req.get('User-Agent');
 
+    console.log('🔧 PASSWORD ROUTE: Parsed passwordId:', passwordId, 'isNaN:', isNaN(passwordId));
+
     if (isNaN(passwordId)) {
+      console.log('🔧 PASSWORD ROUTE: Invalid password ID, returning 400');
       return res.status(400).json({
         success: false,
         error: 'Invalid password ID'
       });
     }
 
+    console.log('🔧 PASSWORD ROUTE: Calling getPasswordById with:', passwordId);
     const password = await getPasswordById(passwordId);
+    console.log('🔧 PASSWORD ROUTE: getPasswordById result:', password ? 'found' : 'null');
 
     if (!password) {
+      console.log('🔧 PASSWORD ROUTE: Password not found, returning 404');
       return res.status(404).json({
         success: false,
         error: 'Password entry not found'
       });
     }
 
+    console.log('🔧 PASSWORD ROUTE: Password found, logging audit and returning success');
     auditLog('password_viewed', req.user.userId, {
       ip: clientIP,
       userAgent,

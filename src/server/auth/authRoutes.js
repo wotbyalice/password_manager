@@ -10,7 +10,7 @@ const {
   changePassword
 } = require('./authService');
 const { validateEmail, validatePassword: validatePasswordStrength, validateName } = require('../utils/validation');
-const { authLog, auditLog } = require('../utils/logger');
+const { authLog, auditLog, info: logger } = require('../utils/logger');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
 
 // Import mock authentication for testing
@@ -18,32 +18,33 @@ const mockAuth = require('../services/mockAuth');
 
 const router = express.Router();
 
-// Rate limiting for authentication routes
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit each IP to 5 requests per windowMs
-  message: {
-    success: false,
-    error: 'Too many authentication attempts, please try again later'
-  },
-  standardHeaders: true,
-  legacyHeaders: false
-});
+// Rate limiting for authentication routes - TEMPORARILY DISABLED FOR TESTING
+// const authLimiter = rateLimit({
+//   windowMs: 15 * 60 * 1000, // 15 minutes
+//   max: 5, // Limit each IP to 5 requests per windowMs
+//   message: {
+//     success: false,
+//     error: 'Too many authentication attempts, please try again later'
+//   },
+//   standardHeaders: true,
+//   legacyHeaders: false
+// });
 
-const registerLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 3, // Limit each IP to 3 registration attempts per hour
-  message: {
-    success: false,
-    error: 'Too many registration attempts, please try again later'
-  }
-});
+// TEMPORARILY DISABLED FOR TESTING
+// const registerLimiter = rateLimit({
+//   windowMs: 60 * 60 * 1000, // 1 hour
+//   max: 3, // Limit each IP to 3 registration attempts per hour
+//   message: {
+//     success: false,
+//     error: 'Too many registration attempts, please try again later'
+//   }
+// });
 
 /**
  * POST /api/auth/register
  * Register a new user account
  */
-router.post('/register', registerLimiter, async (req, res) => {
+router.post('/register', async (req, res) => {
   try {
     const { email, password, firstName, lastName, role = 'user' } = req.body;
     const clientIP = req.ip || req.connection.remoteAddress;
@@ -149,7 +150,7 @@ router.post('/register', registerLimiter, async (req, res) => {
  * POST /api/auth/login
  * Authenticate user and return JWT token
  */
-router.post('/login', authLimiter, async (req, res) => {
+router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     const clientIP = req.ip || req.connection.remoteAddress;
@@ -174,6 +175,16 @@ router.post('/login', authLimiter, async (req, res) => {
         const result = await mockAuth.login(email, password);
 
         authLog('login_success', email, true, { ip: clientIP, userAgent });
+
+        // Log mock admin role assignment for debugging
+        logger(`🔐 MOCK LOGIN SUCCESS - User role assignment`, {
+          userId: result.user.id,
+          email: result.user.email,
+          role: result.user.role,
+          isAdmin: result.user.role === 'admin',
+          tokenGenerated: !!result.token,
+          mockAuth: true
+        });
 
         res.json({
           success: true,
@@ -251,6 +262,15 @@ router.post('/login', authLimiter, async (req, res) => {
 
     authLog('login_success', email, true, { ip: clientIP, userAgent });
     auditLog('user_login', user.id, { ip: clientIP, userAgent });
+
+    // Log admin role assignment for debugging
+    logger(`🔐 LOGIN SUCCESS - User role assignment`, {
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+      isAdmin: user.role === 'admin',
+      tokenGenerated: !!token
+    });
 
     res.json({
       success: true,

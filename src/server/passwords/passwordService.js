@@ -190,27 +190,74 @@ async function getPasswordEntries(options = {}) {
  */
 async function getPasswordById(passwordId) {
   try {
+    console.log('🔧 PASSWORD SERVICE: getPasswordById called with:', passwordId);
+
     const result = await query(
       `SELECT id, title, username, password_encrypted, url_encrypted, notes_encrypted,
               category, created_by, updated_by, created_at, updated_at
-       FROM password_entries 
+       FROM password_entries
        WHERE id = $1 AND is_deleted = false`,
       [passwordId]
     );
 
+    console.log('🔧 PASSWORD SERVICE: Query result rows:', result.rows.length);
+    console.log('🔧 PASSWORD SERVICE: Query result:', result);
+
     if (result.rows.length === 0) {
+      console.log('🔧 PASSWORD SERVICE: No rows found, returning null');
       return null;
     }
 
     const entry = result.rows[0];
-
-    return {
+    console.log('🔧 PASSWORD SERVICE: Found entry:', {
       id: entry.id,
       title: entry.title,
       username: entry.username,
-      password: decryptPassword(entry.password_encrypted),
-      url: entry.url_encrypted ? decryptData(entry.url_encrypted) : null,
-      notes: entry.notes_encrypted ? decryptData(entry.notes_encrypted) : null,
+      hasPasswordEncrypted: !!entry.password_encrypted,
+      passwordEncryptedLength: entry.password_encrypted ? entry.password_encrypted.length : 0,
+      category: entry.category
+    });
+
+    console.log('🔧 PASSWORD SERVICE: Starting decryption...');
+
+    let decryptedPassword;
+    try {
+      decryptedPassword = decryptPassword(entry.password_encrypted);
+      console.log('🔧 PASSWORD SERVICE: Password decryption successful');
+    } catch (decryptError) {
+      console.error('🔧 PASSWORD SERVICE: Password decryption failed:', decryptError);
+      throw decryptError;
+    }
+
+    let decryptedUrl = null;
+    if (entry.url_encrypted) {
+      try {
+        decryptedUrl = decryptData(entry.url_encrypted);
+        console.log('🔧 PASSWORD SERVICE: URL decryption successful');
+      } catch (urlError) {
+        console.error('🔧 PASSWORD SERVICE: URL decryption failed:', urlError);
+        // Don't throw, just set to null
+      }
+    }
+
+    let decryptedNotes = null;
+    if (entry.notes_encrypted) {
+      try {
+        decryptedNotes = decryptData(entry.notes_encrypted);
+        console.log('🔧 PASSWORD SERVICE: Notes decryption successful');
+      } catch (notesError) {
+        console.error('🔧 PASSWORD SERVICE: Notes decryption failed:', notesError);
+        // Don't throw, just set to null
+      }
+    }
+
+    const result_obj = {
+      id: entry.id,
+      title: entry.title,
+      username: entry.username,
+      password: decryptedPassword,
+      url: decryptedUrl,
+      notes: decryptedNotes,
       category: entry.category,
       createdBy: entry.created_by,
       updatedBy: entry.updated_by,
@@ -218,7 +265,11 @@ async function getPasswordById(passwordId) {
       updatedAt: entry.updated_at
     };
 
+    console.log('🔧 PASSWORD SERVICE: Returning decrypted password object');
+    return result_obj;
+
   } catch (error) {
+    console.error('🔧 PASSWORD SERVICE: Error in getPasswordById:', error);
     throw new Error(`Failed to retrieve password entry: ${error.message}`);
   }
 }
@@ -231,7 +282,24 @@ async function getPasswordById(passwordId) {
  * @returns {Promise<Object>} Updated password entry
  */
 async function updatePasswordEntry(passwordId, updateData, userId) {
+  console.log('🔧🔧🔧 UPDATED CODE LOADED - updatePasswordEntry called!');
+
+  // IMMEDIATE SQLite check to bypass transaction issues
+  const useSQLite = process.env.DATABASE_TYPE === 'sqlite' || !process.env.DATABASE_URL;
+  console.log('🔧 DATABASE CHECK: useSQLite =', useSQLite);
+
+  if (useSQLite) {
+    console.log('🔧 BYPASSING TRANSACTION - Using direct SQLite update');
+    return await updatePasswordDirectSQLite(passwordId, updateData, userId);
+  }
+
   const { title, username, password, url, notes, category } = updateData;
+
+  console.log('🔧 PASSWORD SERVICE: updatePasswordEntry called with:', {
+    passwordId,
+    updateData: { title, username, hasPassword: !!password, url, notes, category },
+    userId
+  });
 
   // Validate input data
   const validation = validatePasswordEntry({ title, username, password: password || 'dummy', url, notes, category });
@@ -240,6 +308,7 @@ async function updatePasswordEntry(passwordId, updateData, userId) {
   }
 
   try {
+    console.log('🔧 PASSWORD SERVICE: Using PostgreSQL transaction method');
     return await transaction(async (client) => {
       // Get current entry for audit log
       const currentResult = await client.query(
@@ -341,6 +410,230 @@ async function updatePasswordEntry(passwordId, updateData, userId) {
     });
 
   } catch (error) {
+    passwordLog('password_update_failed', userId, passwordId, {
+      success: false,
+      error: error.message
+    });
+    throw error;
+  }
+}
+
+/**
+ * Update password entry for SQLite (no transactions needed)
+ */
+async function updatePasswordSQLite(passwordId, updateData, userId) {
+  const { title, username, password, url, notes, category } = updateData;
+
+  console.log('🔧 PASSWORD SERVICE: updatePasswordSQLite called');
+
+  // Get current entry first
+  const currentResult = await query(
+    'SELECT * FROM password_entries WHERE id = $1 AND is_deleted = false',
+    [passwordId]
+  );
+
+  if (currentResult.rows.length === 0) {
+    throw new Error('Password entry not found');
+  }
+
+  const currentEntry = currentResult.rows[0];
+  console.log('🔧 PASSWORD SERVICE: Current entry found:', {
+    id: currentEntry.id,
+    title: currentEntry.title
+  });
+
+  // Prepare update data with encryption
+  const updates = [];
+  const values = [];
+  let paramCount = 0;
+
+  if (title !== undefined) {
+    paramCount++;
+    updates.push(`title = $${paramCount}`);
+    values.push(title);
+  }
+
+  if (username !== undefined) {
+    paramCount++;
+    updates.push(`username = $${paramCount}`);
+    values.push(username);
+  }
+
+  if (password !== undefined) {
+    paramCount++;
+    updates.push(`password_encrypted = $${paramCount}`);
+    values.push(encryptPassword(password));
+    console.log('🔧 PASSWORD SERVICE: Password encrypted for update');
+  }
+
+  if (url !== undefined) {
+    paramCount++;
+    updates.push(`url_encrypted = $${paramCount}`);
+    values.push(url ? encryptData(url) : null);
+  }
+
+  if (notes !== undefined) {
+    paramCount++;
+    updates.push(`notes_encrypted = $${paramCount}`);
+    values.push(notes ? encryptData(notes) : null);
+  }
+
+  if (category !== undefined) {
+    paramCount++;
+    updates.push(`category = $${paramCount}`);
+    values.push(category);
+  }
+
+  // Add updated_by and updated_at
+  paramCount++;
+  updates.push(`updated_by = $${paramCount}`);
+  values.push(userId);
+
+  paramCount++;
+  updates.push(`updated_at = $${paramCount}`);
+  values.push(new Date().toISOString());
+
+  // Add WHERE clause parameter
+  paramCount++;
+  values.push(passwordId);
+
+  console.log('🔧 PASSWORD SERVICE: Executing SQLite update with values:', values.length);
+
+  // Execute update
+  const updateQuery = `
+    UPDATE password_entries
+    SET ${updates.join(', ')}
+    WHERE id = $${paramCount}
+  `;
+
+  const result = await query(updateQuery, values);
+  console.log('🔧 PASSWORD SERVICE: SQLite update completed');
+
+  // Get the updated entry
+  const updatedResult = await query(
+    'SELECT id, title, username, password_encrypted, url_encrypted, notes_encrypted, category, created_by, updated_by, created_at, updated_at FROM password_entries WHERE id = $1',
+    [passwordId]
+  );
+
+  const updatedEntry = updatedResult.rows[0];
+
+  // Log the update
+  passwordLog('password_updated', userId, passwordId, {
+    title: updatedEntry.title,
+    category: updatedEntry.category,
+    success: true
+  });
+
+  console.log('🔧 PASSWORD SERVICE: Returning decrypted SQLite update result');
+
+  // Return decrypted entry
+  return {
+    id: updatedEntry.id,
+    title: updatedEntry.title,
+    username: updatedEntry.username,
+    password: decryptPassword(updatedEntry.password_encrypted),
+    url: updatedEntry.url_encrypted ? decryptData(updatedEntry.url_encrypted) : null,
+    notes: updatedEntry.notes_encrypted ? decryptData(updatedEntry.notes_encrypted) : null,
+    category: updatedEntry.category,
+    createdBy: updatedEntry.created_by,
+    updatedBy: updatedEntry.updated_by,
+    createdAt: updatedEntry.created_at,
+    updatedAt: updatedEntry.updated_at
+  };
+}
+
+/**
+ * Direct SQLite update (bypasses transaction system)
+ */
+async function updatePasswordDirectSQLite(passwordId, updateData, userId) {
+  console.log('🔧 DIRECT SQLITE UPDATE: Starting update for password ID:', passwordId);
+
+  const { title, username, password, url, notes, category } = updateData;
+
+  // Validate input data
+  const validation = validatePasswordEntry({ title, username, password: password || 'dummy', url, notes, category });
+  if (!validation.isValid) {
+    throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
+  }
+
+  try {
+    // Get current entry first
+    const currentResult = await query(
+      'SELECT * FROM password_entries WHERE id = $1 AND is_deleted = false',
+      [passwordId]
+    );
+
+    if (currentResult.rows.length === 0) {
+      throw new Error('Password entry not found');
+    }
+
+    const currentEntry = currentResult.rows[0];
+    console.log('🔧 DIRECT SQLITE: Current entry found:', {
+      id: currentEntry.id,
+      title: currentEntry.title
+    });
+
+    // Prepare encrypted data
+    const encryptedPassword = password ? encryptPassword(password) : currentEntry.password_encrypted;
+    const encryptedUrl = url !== undefined ? (url ? encryptData(url) : null) : currentEntry.url_encrypted;
+    const encryptedNotes = notes !== undefined ? (notes ? encryptData(notes) : null) : currentEntry.notes_encrypted;
+
+    console.log('🔧 DIRECT SQLITE: Data encrypted, executing update');
+
+    // Execute direct update
+    const updateResult = await query(`
+      UPDATE password_entries
+      SET title = $1, username = $2, password_encrypted = $3, url_encrypted = $4,
+          notes_encrypted = $5, category = $6, updated_by = $7, updated_at = $8
+      WHERE id = $9
+    `, [
+      title || currentEntry.title,
+      username || currentEntry.username,
+      encryptedPassword,
+      encryptedUrl,
+      encryptedNotes,
+      category || currentEntry.category,
+      userId,
+      new Date().toISOString(),
+      passwordId
+    ]);
+
+    console.log('🔧 DIRECT SQLITE: Update executed, getting updated entry');
+
+    // Get the updated entry
+    const updatedResult = await query(
+      'SELECT id, title, username, password_encrypted, url_encrypted, notes_encrypted, category, created_by, updated_by, created_at, updated_at FROM password_entries WHERE id = $1',
+      [passwordId]
+    );
+
+    const updatedEntry = updatedResult.rows[0];
+
+    // Log the update
+    passwordLog('password_updated', userId, passwordId, {
+      title: updatedEntry.title,
+      category: updatedEntry.category,
+      success: true
+    });
+
+    console.log('🔧 DIRECT SQLITE: Update completed successfully');
+
+    // Return decrypted entry
+    return {
+      id: updatedEntry.id,
+      title: updatedEntry.title,
+      username: updatedEntry.username,
+      password: decryptPassword(updatedEntry.password_encrypted),
+      url: updatedEntry.url_encrypted ? decryptData(updatedEntry.url_encrypted) : null,
+      notes: updatedEntry.notes_encrypted ? decryptData(updatedEntry.notes_encrypted) : null,
+      category: updatedEntry.category,
+      createdBy: updatedEntry.created_by,
+      updatedBy: updatedEntry.updated_by,
+      createdAt: updatedEntry.created_at,
+      updatedAt: updatedEntry.updated_at
+    };
+
+  } catch (error) {
+    console.log('🔧 DIRECT SQLITE ERROR:', error.message);
     passwordLog('password_update_failed', userId, passwordId, {
       success: false,
       error: error.message
