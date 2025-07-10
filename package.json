@@ -15,6 +15,7 @@
     "test:coverage": "jest --coverage",
     "test:server": "jest --testPathPattern=server",
     "test:integration": "jest --testPathPattern=integration",
+    "setup:categories": "node src/scripts/populate-default-categories.js",
     "build": "npm run build:server && npm run build:electron",
     "build:server": "echo 'Server build complete'",
     "build:electron": "electron-builder",
