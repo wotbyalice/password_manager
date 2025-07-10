@@ -11,6 +11,7 @@ class SQLiteAdapter {
     this.data = {
       users: [],
       passwords: [],
+      password_categories: [],
       audit_logs: []
     };
     
@@ -117,6 +118,27 @@ class SQLiteAdapter {
     if (sqlLower.includes('update password_entries') && sqlLower.includes('is_deleted = true')) {
       console.log('🔧 SQLITE ADAPTER: Handling DELETE password_entries (soft delete)');
       return this.deletePassword(params);
+    }
+
+    // Handle category queries
+    if (sqlLower.includes('select') && sqlLower.includes('from password_categories')) {
+      console.log('🔧 SQLITE ADAPTER: Handling SELECT from password_categories');
+      return this.getCategories(sql, params);
+    }
+
+    if (sqlLower.includes('insert into password_categories')) {
+      console.log('🔧 SQLITE ADAPTER: Handling INSERT INTO password_categories');
+      return this.insertCategory(params);
+    }
+
+    if (sqlLower.includes('update password_categories')) {
+      console.log('🔧 SQLITE ADAPTER: Handling UPDATE password_categories');
+      return this.updateCategory(sql, params);
+    }
+
+    if (sqlLower.includes('delete from password_categories')) {
+      console.log('🔧 SQLITE ADAPTER: Handling DELETE from password_categories');
+      return this.deleteCategory(params);
     }
 
     // Default response for unhandled queries
@@ -383,6 +405,103 @@ class SQLiteAdapter {
   async connect() {
     // No-op for file-based storage
     return Promise.resolve();
+  }
+
+  // Category-related methods
+  getCategories(sql, params) {
+    const sqlLower = sql.toLowerCase();
+
+    // Handle different SELECT queries for categories
+    if (sqlLower.includes('where id = ?')) {
+      // SELECT by ID
+      const categoryId = parseInt(params[0]);
+      const category = this.data.password_categories.find(c => c.id === categoryId);
+      return { rows: category ? [category] : [], rowCount: category ? 1 : 0 };
+    }
+
+    if (sqlLower.includes('where lower(name) = lower(?)')) {
+      // SELECT by name (case insensitive)
+      const categoryName = params[0].toLowerCase();
+      const category = this.data.password_categories.find(c => c.name.toLowerCase() === categoryName);
+      return { rows: category ? [category] : [], rowCount: category ? 1 : 0 };
+    }
+
+    if (sqlLower.includes('count(pe.id) as password_count')) {
+      // Category stats query
+      const categoriesWithStats = this.data.password_categories.map(category => {
+        const passwordCount = this.data.passwords.filter(p => p.category === category.name).length;
+        return {
+          ...category,
+          password_count: passwordCount
+        };
+      });
+      return { rows: categoriesWithStats, rowCount: categoriesWithStats.length };
+    }
+
+    // Default: return all categories
+    return { rows: this.data.password_categories, rowCount: this.data.password_categories.length };
+  }
+
+  insertCategory(params) {
+    const [name, description, color, createdBy, createdAt] = params;
+    const category = {
+      id: this.data.password_categories.length + 1,
+      name,
+      description,
+      color,
+      created_by: createdBy,
+      created_at: createdAt
+    };
+
+    this.data.password_categories.push(category);
+    this.saveData();
+
+    return { rows: [category], rowCount: 1, insertId: category.id };
+  }
+
+  updateCategory(sql, params) {
+    // Extract category ID from params (last parameter)
+    const categoryId = parseInt(params[params.length - 1]);
+    const categoryIndex = this.data.password_categories.findIndex(c => c.id === categoryId);
+
+    if (categoryIndex === -1) {
+      return { rows: [], rowCount: 0 };
+    }
+
+    const category = this.data.password_categories[categoryIndex];
+
+    // Parse the SQL to determine what fields to update
+    const sqlLower = sql.toLowerCase();
+    let paramIndex = 0;
+
+    if (sqlLower.includes('name = ?')) {
+      category.name = params[paramIndex++];
+    }
+
+    if (sqlLower.includes('description = ?')) {
+      category.description = params[paramIndex++];
+    }
+
+    if (sqlLower.includes('color = ?')) {
+      category.color = params[paramIndex++];
+    }
+
+    this.saveData();
+    return { rows: [category], rowCount: 1 };
+  }
+
+  deleteCategory(params) {
+    const categoryId = parseInt(params[0]);
+    const categoryIndex = this.data.password_categories.findIndex(c => c.id === categoryId);
+
+    if (categoryIndex === -1) {
+      return { rows: [], rowCount: 0 };
+    }
+
+    this.data.password_categories.splice(categoryIndex, 1);
+    this.saveData();
+
+    return { rows: [], rowCount: 1 };
   }
 
   async end() {
