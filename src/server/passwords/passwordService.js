@@ -10,7 +10,7 @@ const { passwordLog, auditLog } = require('../utils/logger');
  * @returns {Promise<Object>} Created password entry
  */
 async function createPasswordEntry(passwordData, userId) {
-  const { title, username, password, url, notes, category } = passwordData;
+  const { title, username, password, url, notes, categoryId } = passwordData;
 
   // Validate input data
   const validation = validatePasswordEntry(passwordData);
@@ -19,6 +19,18 @@ async function createPasswordEntry(passwordData, userId) {
   }
 
   try {
+    // Validate category ID if provided
+    if (categoryId) {
+      const categoryCheck = await query(
+        'SELECT id FROM password_categories WHERE id = $1',
+        [categoryId]
+      );
+
+      if (categoryCheck.rows.length === 0) {
+        throw new Error('Invalid category ID');
+      }
+    }
+
     // Encrypt sensitive data
     const passwordEncrypted = encryptPassword(password);
     const notesEncrypted = notes ? encryptData(notes) : null;
@@ -26,11 +38,11 @@ async function createPasswordEntry(passwordData, userId) {
 
     // Insert password entry
     const result = await query(
-      `INSERT INTO password_entries 
-       (title, username, password_encrypted, url_encrypted, notes_encrypted, category, created_by, updated_by)
+      `INSERT INTO password_entries
+       (title, username, password_encrypted, url_encrypted, notes_encrypted, category_id, created_by, updated_by)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $7)
-       RETURNING id, title, username, url_encrypted, notes_encrypted, category, created_by, created_at`,
-      [title, username, passwordEncrypted, urlEncrypted, notesEncrypted, category, userId]
+       RETURNING id, title, username, url_encrypted, notes_encrypted, category_id, created_by, created_at`,
+      [title, username, passwordEncrypted, urlEncrypted, notesEncrypted, categoryId, userId]
     );
 
     const createdEntry = result.rows[0];
@@ -38,7 +50,7 @@ async function createPasswordEntry(passwordData, userId) {
     // Log the creation
     passwordLog('password_created', userId, createdEntry.id, {
       title: createdEntry.title,
-      category: createdEntry.category,
+      categoryId: createdEntry.category_id,
       success: true
     });
 
@@ -86,12 +98,19 @@ async function getPasswordEntries(options = {}) {
       queryParams.push(category);
     }
 
-    // Build query
-    const countQuery = `SELECT COUNT(*) FROM password_entries ${whereClause}`;
+    // Build query with category join
+    const countQuery = `
+      SELECT COUNT(*)
+      FROM password_entries pe
+      LEFT JOIN password_categories pc ON pe.category_id = pc.id
+      ${whereClause}
+    `;
     const dataQuery = `
-      SELECT id, title, username, password_encrypted, url_encrypted, notes_encrypted, 
-             category, created_by, updated_by, created_at, updated_at
-      FROM password_entries 
+      SELECT pe.id, pe.title, pe.username, pe.password_encrypted, pe.url_encrypted, pe.notes_encrypted,
+             pe.category_id, pe.created_by, pe.updated_by, pe.created_at, pe.updated_at,
+             pc.name as category_name, pc.description as category_description, pc.color as category_color
+      FROM password_entries pe
+      LEFT JOIN password_categories pc ON pe.category_id = pc.id
       ${whereClause}
       ORDER BY title ASC
       LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}
@@ -258,7 +277,13 @@ async function getPasswordById(passwordId) {
       password: decryptedPassword,
       url: decryptedUrl,
       notes: decryptedNotes,
-      category: entry.category,
+      categoryId: entry.category_id,
+      category: entry.category_name ? {
+        id: entry.category_id,
+        name: entry.category_name,
+        description: entry.category_description,
+        color: entry.category_color
+      } : null,
       createdBy: entry.created_by,
       updatedBy: entry.updated_by,
       createdAt: entry.created_at,
@@ -422,7 +447,7 @@ async function updatePasswordEntry(passwordId, updateData, userId) {
  * Update password entry for SQLite (no transactions needed)
  */
 async function updatePasswordSQLite(passwordId, updateData, userId) {
-  const { title, username, password, url, notes, category } = updateData;
+  const { title, username, password, url, notes, categoryId } = updateData;
 
   console.log('🔧 PASSWORD SERVICE: updatePasswordSQLite called');
 
@@ -478,10 +503,22 @@ async function updatePasswordSQLite(passwordId, updateData, userId) {
     values.push(notes ? encryptData(notes) : null);
   }
 
-  if (category !== undefined) {
+  if (categoryId !== undefined) {
+    // Validate category ID if provided
+    if (categoryId !== null) {
+      const categoryCheck = await query(
+        'SELECT id FROM password_categories WHERE id = $1',
+        [categoryId]
+      );
+
+      if (categoryCheck.rows.length === 0) {
+        throw new Error('Invalid category ID');
+      }
+    }
+
     paramCount++;
-    updates.push(`category = $${paramCount}`);
-    values.push(category);
+    updates.push(`category_id = $${paramCount}`);
+    values.push(categoryId);
   }
 
   // Add updated_by and updated_at

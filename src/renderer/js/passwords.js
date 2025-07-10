@@ -138,13 +138,20 @@ class PasswordManager {
      */
     async loadCategories() {
         try {
-            const result = await electronAPI.getCategories();
-            
-            if (result.success) {
-                this.categories = result.data.categories || [];
-                this.renderCategoryFilter();
-                this.renderPasswordCategoryOptions();
+            // Use our new CategoriesManager if available
+            if (window.categoriesManager) {
+                await window.categoriesManager.loadCategories();
+                this.categories = window.categoriesManager.categories || [];
+            } else {
+                // Fallback to direct API call
+                const result = await electronAPI.getCategories();
+                if (result.success) {
+                    this.categories = result.data.categories || [];
+                }
             }
+
+            this.renderCategoryFilter();
+            this.renderPasswordCategoryOptions();
         } catch (error) {
             console.error('Error loading categories:', error);
         }
@@ -181,14 +188,16 @@ class PasswordManager {
      * Render individual password card
      */
     renderPasswordCard(password) {
-        const categoryClass = password.category ? `category-${password.category.toLowerCase().replace(/\s+/g, '-')}` : '';
+        const categoryName = password.category?.name || '';
+        const categoryColor = password.category?.color || '#6b7280';
+        const categoryClass = categoryName ? `category-${categoryName.toLowerCase().replace(/\s+/g, '-')}` : '';
         const isEditing = this.editingPasswordId === password.id;
-        
+
         return `
             <div class="password-card ${categoryClass} ${isEditing ? 'editing' : ''}" data-id="${password.id}">
                 <div class="card-header">
                     <h3 class="card-title">${this.escapeHtml(password.title)}</h3>
-                    ${password.category ? `<span class="card-category">${this.escapeHtml(password.category)}</span>` : ''}
+                    ${categoryName ? `<span class="card-category" style="background-color: ${categoryColor}; color: white;">${this.escapeHtml(categoryName)}</span>` : ''}
                 </div>
                 
                 <div class="card-body">
@@ -262,11 +271,15 @@ class PasswordManager {
      * Render empty state
      */
     renderEmptyState() {
-        const message = this.searchQuery 
-            ? `No passwords found for "${this.searchQuery}"`
-            : this.selectedCategory
-            ? `No passwords found in "${this.selectedCategory}" category`
-            : 'No passwords yet';
+        let message = 'No passwords yet';
+
+        if (this.searchQuery) {
+            message = `No passwords found for "${this.searchQuery}"`;
+        } else if (this.selectedCategory) {
+            const category = this.categories.find(cat => cat.id == this.selectedCategory);
+            const categoryName = category ? category.name : 'Unknown Category';
+            message = `No passwords found in "${categoryName}" category`;
+        }
 
         return `
             <div class="empty-state">
@@ -508,7 +521,7 @@ class PasswordManager {
                 password: formData.get('password'),
                 url: formData.get('url'),
                 notes: formData.get('notes'),
-                category: formData.get('category')
+                categoryId: formData.get('category') ? parseInt(formData.get('category')) : null
             };
 
             // Validate required fields
@@ -692,7 +705,7 @@ class PasswordManager {
         filter.innerHTML = `
             <option value="">All Categories</option>
             ${this.categories.map(cat =>
-                `<option value="${this.escapeHtml(cat.name)}" ${cat.name === this.selectedCategory ? 'selected' : ''}>
+                `<option value="${cat.id}" ${cat.id == this.selectedCategory ? 'selected' : ''}>
                     ${this.escapeHtml(cat.name)} (${cat.passwordCount || 0})
                 </option>`
             ).join('')}
@@ -709,7 +722,7 @@ class PasswordManager {
         select.innerHTML = `
             <option value="">Select Category</option>
             ${this.categories.map(cat =>
-                `<option value="${this.escapeHtml(cat.name)}">${this.escapeHtml(cat.name)}</option>`
+                `<option value="${cat.id}">${this.escapeHtml(cat.name)}</option>`
             ).join('')}
         `;
     }
@@ -805,7 +818,7 @@ class PasswordManager {
         document.getElementById('password-password').value = password.password || '';
         document.getElementById('password-url').value = password.url || '';
         document.getElementById('password-notes').value = password.notes || '';
-        document.getElementById('password-category').value = password.category || '';
+        document.getElementById('password-category').value = password.categoryId || '';
     }
 
     /**
