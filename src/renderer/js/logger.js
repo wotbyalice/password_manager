@@ -177,10 +177,13 @@ class Logger {
         window.addEventListener('load', () => {
             setTimeout(() => {
                 const perfData = performance.getEntriesByType('navigation')[0];
+                const firstPaintEntry = performance.getEntriesByType('paint').find(p => p.name === 'first-paint');
+                const firstContentfulPaintEntry = performance.getEntriesByType('paint').find(p => p.name === 'first-contentful-paint');
+
                 this.logPerformance('Page Load', perfData.loadEventEnd - perfData.fetchStart, {
                     domContentLoaded: perfData.domContentLoadedEventEnd - perfData.fetchStart,
-                    firstPaint: performance.getEntriesByType('paint').find(p => p.name === 'first-paint')?.startTime,
-                    firstContentfulPaint: performance.getEntriesByType('paint').find(p => p.name === 'first-contentful-paint')?.startTime
+                    firstPaint: firstPaintEntry ? firstPaintEntry.startTime : null,
+                    firstContentfulPaint: firstContentfulPaintEntry ? firstContentfulPaintEntry.startTime : null
                 });
             }, 0);
         });

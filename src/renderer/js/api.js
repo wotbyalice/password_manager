@@ -36,9 +36,10 @@ class APIClient {
             console.log('API Client: No auth token available for request');
         }
 
+        const startTime = Date.now();
+
         try {
             console.log(`API Client: Fetching ${url} with config:`, config);
-            const startTime = Date.now();
 
             // Log request using comprehensive logger
             window.logger?.logAPICall(options.method || 'GET', url, options.body ? JSON.parse(options.body) : null);
