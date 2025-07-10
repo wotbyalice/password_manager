@@ -132,12 +132,12 @@ class PasswordManagerApp {
         if (window.PasswordManager) {
             this.passwordManager = new PasswordManager();
         }
-        
+
         // Initialize category management
-        if (window.CategoryManager) {
-            this.categoryManager = new CategoryManager();
+        if (window.initializeCategories) {
+            this.initializeCategories();
         }
-        
+
         // Initialize user management (admin only)
         if (this.currentUser?.role === 'admin' && window.UserManager) {
             this.userManager = new UserManager();
@@ -146,6 +146,31 @@ class PasswordManagerApp {
         // Initialize audit management (admin only)
         if (this.currentUser?.role === 'admin' && window.AuditManager) {
             this.auditManager = new AuditManager();
+        }
+    }
+
+    /**
+     * Initialize categories system
+     */
+    async initializeCategories() {
+        try {
+            console.log('App: Initializing categories system...');
+
+            const result = await window.initializeCategories(this.socket);
+            this.categoriesManager = result.manager;
+            this.categoriesUI = result.ui;
+
+            // Setup navigation
+            window.setupCategoriesNavigation();
+
+            // Update permissions
+            window.updateCategoriesPermissions();
+
+            console.log('✅ App: Categories system initialized successfully');
+
+        } catch (error) {
+            console.error('❌ App: Failed to initialize categories system:', error);
+            window.handleCategoriesError(error, 'Initialization');
         }
     }
 
@@ -345,8 +370,8 @@ class PasswordManagerApp {
     async loadInitialData() {
         try {
             // Load categories for filters
-            if (this.categoryManager) {
-                await this.categoryManager.loadCategories();
+            if (this.categoriesManager) {
+                await this.categoriesManager.loadCategories();
             }
             
             // Load initial passwords
@@ -413,8 +438,11 @@ class PasswordManagerApp {
                     }
                     break;
                 case 'categories':
-                    if (this.categoryManager) {
-                        await this.categoryManager.loadCategories();
+                    if (this.categoriesManager) {
+                        await this.categoriesManager.loadCategories();
+                        if (this.categoriesUI) {
+                            this.categoriesUI.renderCategories();
+                        }
                     }
                     break;
                 case 'users':
