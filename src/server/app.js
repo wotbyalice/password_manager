@@ -10,6 +10,7 @@ const { testConnection } = require('./database/connection');
 const authRoutes = require('./auth/authRoutes');
 const passwordRoutes = require('./passwords/passwordRoutes');
 const userRoutes = require('./users/userRoutes');
+const categoryRoutes = require('./routes/categoryRoutes');
 const { authenticateToken } = require('./middleware/auth');
 const { getPasswordCategories } = require('./passwords/categoryService');
 
@@ -136,6 +137,7 @@ app.get('/health', async (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/passwords', passwordRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/categories', authenticateToken, categoryRoutes);
 
 // Compatibility routes for incorrect API calls from browser (MUST be before auth routes)
 app.get('/categories', async (req, res) => {
