@@ -15,10 +15,12 @@ class RealtimeManager {
 
     /**
      * Initialize real-time connection
+     * Note: Socket connection is already established during login process
+     * This method only sets up event handlers for the existing connection
      */
     async init(token) {
-        console.log('Realtime Manager: Initializing...');
-        
+        console.log('Realtime Manager: Initializing event handlers...');
+
         // In browser environment, we'll use a simpler approach
         if (typeof window !== 'undefined' && !window.electronAPI) {
             console.log('Realtime Manager: Browser environment detected, using polling fallback');
@@ -27,19 +29,19 @@ class RealtimeManager {
         }
 
         try {
-            // Use Electron API for socket connection
-            const result = await electronAPI.connectSocket(token);
-            
-            if (result.success) {
-                console.log('Realtime Manager: Socket connection established');
+            // Check if socket is already connected (it should be from login)
+            const status = await electronAPI.getSocketStatus();
+
+            if (status.connected) {
+                console.log('Realtime Manager: Using existing socket connection');
                 this.isConnected = true;
                 this.setupEventHandlers();
             } else {
-                console.error('Realtime Manager: Failed to connect socket:', result.error);
+                console.log('Realtime Manager: No existing socket connection, falling back to polling');
                 this.initPollingFallback();
             }
         } catch (error) {
-            console.error('Realtime Manager: Error initializing socket:', error);
+            console.error('Realtime Manager: Error checking socket status:', error);
             this.initPollingFallback();
         }
     }

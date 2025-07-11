@@ -1,0 +1,17 @@
+{
+  "watch": ["src/server"],
+  "ignore": [
+    "data/**/*",
+    "*.json",
+    "logs/**/*",
+    "temp/**/*",
+    "node_modules/**/*",
+    "src/renderer/**/*",
+    "src/main/**/*"
+  ],
+  "ext": "js,mjs,json",
+  "env": {
+    "NODE_ENV": "development"
+  },
+  "delay": 1000
+}

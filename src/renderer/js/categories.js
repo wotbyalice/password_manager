@@ -23,22 +23,38 @@ class CategoriesManager {
     async loadCategories() {
         try {
             this.isLoading = true;
-            console.log('Categories Manager: Loading categories...');
-            
+            console.log('🔄 CATEGORIES: CategoriesManager.loadCategories() starting...');
+            console.log('🔄 CATEGORIES: electronAPI available:', !!window.electronAPI);
+            console.log('🔄 CATEGORIES: electronAPI.getCategories available:', !!window.electronAPI?.getCategories);
+
             const result = await electronAPI.getCategories();
-            
+            console.log('🔄 CATEGORIES: electronAPI.getCategories() result:', {
+                success: result?.success,
+                categoriesCount: result?.categories?.length,
+                error: result?.error,
+                fullResult: result
+            });
+
             if (result.success) {
                 this.categories = result.categories || [];
-                console.log('Categories Manager: Categories loaded successfully:', this.categories);
+                console.log('✅ CATEGORIES: Categories loaded successfully:', {
+                    count: this.categories.length,
+                    categories: this.categories
+                });
             } else {
-                console.error('Categories Manager: Failed to load categories:', result.error);
+                console.error('❌ CATEGORIES: Failed to load categories:', result.error);
                 this.categories = [];
             }
         } catch (error) {
-            console.error('Categories Manager: Error loading categories:', error);
+            console.error('❌ CATEGORIES: Error loading categories:', {
+                message: error.message,
+                stack: error.stack,
+                error: error
+            });
             this.categories = [];
         } finally {
             this.isLoading = false;
+            console.log('🔄 CATEGORIES: CategoriesManager.loadCategories() finished, isLoading:', this.isLoading);
         }
     }
 
@@ -289,28 +305,45 @@ class CategoryManager {
             this.isLoading = true;
             this.renderLoadingState();
 
-            console.log('CategoryManager: Loading categories with statistics...');
+            console.log('🔄 CATEGORY_MANAGER: CategoryManager.loadCategories() starting...');
+            console.log('🔄 CATEGORY_MANAGER: electronAPI available:', !!window.electronAPI);
+            console.log('🔄 CATEGORY_MANAGER: electronAPI.getCategoryStats available:', !!window.electronAPI?.getCategoryStats);
 
             // Get categories with password counts
             const result = await electronAPI.getCategoryStats();
+            console.log('🔄 CATEGORY_MANAGER: electronAPI.getCategoryStats() result:', {
+                success: result?.success,
+                categoriesCount: result?.data?.categories?.length,
+                error: result?.error,
+                fullResult: result
+            });
 
             if (result.success) {
                 this.categories = result.data.categories || [];
-                console.log('CategoryManager: Categories loaded:', this.categories.length);
+                console.log('✅ CATEGORY_MANAGER: Categories loaded successfully:', {
+                    count: this.categories.length,
+                    categories: this.categories
+                });
             } else {
-                console.error('CategoryManager: Failed to load categories:', result.error);
+                console.error('❌ CATEGORY_MANAGER: Failed to load categories:', result.error);
                 this.categories = [];
                 this.renderErrorState(result.error);
                 return;
             }
 
             this.renderCategories();
+            console.log('✅ CATEGORY_MANAGER: Categories rendered successfully');
 
         } catch (error) {
-            console.error('CategoryManager: Error loading categories:', error);
+            console.error('❌ CATEGORY_MANAGER: Error loading categories:', {
+                message: error.message,
+                stack: error.stack,
+                error: error
+            });
             this.renderErrorState(error.message);
         } finally {
             this.isLoading = false;
+            console.log('🔄 CATEGORY_MANAGER: CategoryManager.loadCategories() finished, isLoading:', this.isLoading);
         }
     }
 

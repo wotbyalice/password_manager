@@ -22,14 +22,25 @@ class SocketClient {
    */
   async connect(token) {
     return new Promise((resolve, reject) => {
+      // If already connected with the same token, return success
+      if (this.isConnected && this.token === token) {
+        console.log('Socket.io already connected with same token');
+        resolve(true);
+        return;
+      }
+
+      // Disconnect existing connection if any
+      if (this.socket) {
+        console.log('Socket.io disconnecting existing connection before reconnecting');
+        this.disconnect();
+      }
+
       this.token = token;
 
       this.socket = io(this.serverUrl, {
         auth: { token },
         transports: ['websocket', 'polling'],
-        reconnection: true,
-        reconnectionAttempts: this.maxReconnectAttempts,
-        reconnectionDelay: this.reconnectDelay,
+        reconnection: false,  // CRITICAL: Disable automatic reconnection to prevent runaway loops
         timeout: 10000
       });
 

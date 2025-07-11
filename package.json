@@ -1,6 +1,6 @@
 {
   "name": "office-password-manager",
-  "version": "1.0.0",
+  "version": "0.6.0",
   "description": "Secure password manager for office environments with admin controls and real-time sync",
   "main": "src/main/main.js",
   "homepage": "./",

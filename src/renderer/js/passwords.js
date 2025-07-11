@@ -68,12 +68,14 @@ class PasswordManager {
         // Close modal events
         [closeBtn, cancelBtn].forEach(btn => {
             btn?.addEventListener('click', () => {
+                console.log('🔧 MODAL: Close button clicked', { button: btn.id || btn.className });
                 this.closePasswordModal();
             });
         });
 
         overlay?.addEventListener('click', (e) => {
             if (e.target === overlay) {
+                console.log('🔧 MODAL: Overlay clicked, closing modal');
                 this.closePasswordModal();
             }
         });
@@ -105,6 +107,14 @@ class PasswordManager {
      */
     async loadPasswords() {
         try {
+            // Send detailed log to server terminal
+            await electronAPI.logInfo('🔄 FRONTEND: loadPasswords() called', {
+                currentPage: this.currentPage,
+                selectedCategory: this.selectedCategory,
+                searchQuery: this.searchQuery,
+                timestamp: new Date().toISOString()
+            });
+
             this.showLoadingState();
 
             const options = {
@@ -114,11 +124,26 @@ class PasswordManager {
                 search: this.searchQuery
             };
 
+            await electronAPI.logInfo('🔄 FRONTEND: Making API call with options', options);
             const result = await electronAPI.getPasswords(options);
-            
+
+            await electronAPI.logInfo('🔄 FRONTEND: API response received', {
+                success: result.success,
+                passwordCount: result.data?.passwords?.length || 0,
+                totalPages: result.data?.pagination?.pages || 0,
+                hasData: !!result.data,
+                hasPasswords: !!result.data?.passwords
+            });
+
             if (result.success) {
                 this.passwords = result.data.passwords || [];
                 this.totalPages = result.data.pagination?.pages || 1;
+
+                await electronAPI.logInfo('🔄 FRONTEND: Data stored, calling renderPasswords', {
+                    storedPasswordCount: this.passwords.length,
+                    passwordTitles: this.passwords.map(p => p.title)
+                });
+
                 this.renderPasswords();
                 this.renderPagination();
             } else {
@@ -126,7 +151,7 @@ class PasswordManager {
             }
 
         } catch (error) {
-            console.error('Error loading passwords:', error);
+            await electronAPI.logError('❌ FRONTEND: Error loading passwords', error);
             this.showError('Failed to load passwords');
         } finally {
             this.hideLoadingState();
@@ -169,19 +194,57 @@ class PasswordManager {
     /**
      * Render passwords grid
      */
-    renderPasswords() {
+    async renderPasswords() {
+        await electronAPI.logInfo('🔧 FRONTEND: renderPasswords() called', {
+            passwordCount: this.passwords.length,
+            passwords: this.passwords.map(p => ({ id: p.id, title: p.title })),
+            timestamp: new Date().toISOString()
+        });
+
+        // Small delay to ensure view switching is complete
+        await new Promise(resolve => setTimeout(resolve, 50));
+
         const grid = document.getElementById('passwords-grid');
-        if (!grid) return;
+        const currentView = document.querySelector('.view.active');
+        const isPasswordsViewActive = currentView?.id === 'passwords-view';
+
+        await electronAPI.logInfo('🔧 FRONTEND: DOM element check', {
+            gridExists: !!grid,
+            currentViewId: currentView?.id,
+            isPasswordsViewActive: isPasswordsViewActive,
+            gridVisible: grid ? getComputedStyle(grid).display !== 'none' : false,
+            gridParentVisible: grid ? getComputedStyle(grid.parentElement).display !== 'none' : false,
+            gridParentClasses: grid ? grid.parentElement.className : 'N/A',
+            gridParentId: grid ? grid.parentElement.id : 'N/A',
+            allActiveViews: Array.from(document.querySelectorAll('.view.active')).map(v => v.id),
+            passwordsViewHasActive: document.getElementById('passwords-view')?.classList.contains('active')
+        });
+
+        if (!grid) {
+            await electronAPI.logError('❌ FRONTEND: passwords-grid element not found!');
+            return;
+        }
 
         if (this.passwords.length === 0) {
+            await electronAPI.logInfo('🔧 FRONTEND: No passwords to display, showing empty state');
             grid.innerHTML = this.renderEmptyState();
             return;
         }
 
+        await electronAPI.logInfo('🔧 FRONTEND: Rendering password cards', {
+            cardCount: this.passwords.length,
+            gridInnerHTMLLength: grid.innerHTML.length
+        });
+
         grid.innerHTML = this.passwords.map(password => this.renderPasswordCard(password)).join('');
-        
+
         // Add event listeners to cards
         this.attachCardEventListeners();
+
+        await electronAPI.logInfo('✅ FRONTEND: Passwords rendered successfully', {
+            finalGridInnerHTMLLength: grid.innerHTML.length,
+            renderedCards: grid.querySelectorAll('.password-card').length
+        });
     }
 
     /**
@@ -432,7 +495,7 @@ class PasswordManager {
                 this.editingPasswordId = passwordId;
                 this.populatePasswordForm(password);
                 document.getElementById('password-modal-title').textContent = 'Edit Password';
-                document.getElementById('password-save').textContent = 'Update Password';
+                document.getElementById('password-save').textContent = 'Save Changes';
                 this.showModal('password-modal');
 
                 // Start editing session for real-time collaboration
@@ -495,9 +558,9 @@ class PasswordManager {
         if (confirmed) {
             try {
                 const result = await electronAPI.deletePassword(passwordId);
-                
+
                 if (result.success) {
-                    this.showSuccess('Password deleted successfully');
+                    // Success notification is handled by real-time events
                     await this.loadPasswords();
                 } else {
                     throw new Error(result.error);
@@ -541,7 +604,10 @@ class PasswordManager {
             }
 
             if (result.success) {
-                this.showSuccess(this.editingPasswordId ? 'Password updated successfully' : 'Password created successfully');
+                // Only show success message for new passwords (updates are handled by real-time events)
+                if (!this.editingPasswordId) {
+                    this.showSuccess('Password created successfully');
+                }
                 this.closePasswordModal();
                 await this.loadPasswords();
             } else {
@@ -600,16 +666,34 @@ class PasswordManager {
 
     // Real-time event handlers
     handlePasswordCreated(data) {
+        // Don't refresh if user is currently editing
+        if (this.editingPasswordId) {
+            console.log('🔧 SOCKET: Password created but user is editing, skipping refresh');
+            return;
+        }
+
         if (this.currentPage === 1) {
             this.loadPasswords();
         }
     }
 
     handlePasswordUpdated(data) {
+        // Don't refresh if user is currently editing (prevents modal from closing)
+        if (this.editingPasswordId) {
+            console.log('🔧 SOCKET: Password updated but user is editing, skipping refresh');
+            return;
+        }
+
         this.loadPasswords();
     }
 
     handlePasswordDeleted(data) {
+        // Don't refresh if user is currently editing
+        if (this.editingPasswordId) {
+            console.log('🔧 SOCKET: Password deleted but user is editing, skipping refresh');
+            return;
+        }
+
         this.loadPasswords();
     }
 
@@ -632,7 +716,7 @@ class PasswordManager {
     closePasswordModal() {
         console.log('🔧 MODAL: closePasswordModal called', {
             editingPasswordId: this.editingPasswordId,
-            stack: new Error().stack
+            stack: new Error().stack.split('\n').slice(0, 5).join('\n')
         });
 
         document.getElementById('modal-overlay').classList.add('hidden');
@@ -660,7 +744,7 @@ class PasswordManager {
             saveBtn.innerHTML = '<div class="loading-spinner-sm"></div> Saving...';
         } else {
             saveBtn.disabled = false;
-            saveBtn.textContent = this.editingPasswordId ? 'Update Password' : 'Save Password';
+            saveBtn.textContent = this.editingPasswordId ? 'Save Changes' : 'Save Password';
         }
     }
 

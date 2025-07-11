@@ -424,7 +424,19 @@ class PasswordRoutes {
    */
   async getPasswordCategories(req, res) {
     try {
+      this.logger.info('🔄 ROUTE: GET /api/passwords/categories called', {
+        userId: req.user?.id,
+        userEmail: req.user?.email,
+        ip: req.ip,
+        userAgent: req.get('User-Agent')
+      });
+
       const categories = await this.categoryService.getPasswordCategories();
+
+      this.logger.info('✅ ROUTE: Categories retrieved successfully', {
+        count: categories?.length,
+        categories: categories
+      });
 
       res.json({
         success: true,
@@ -432,6 +444,11 @@ class PasswordRoutes {
       });
 
     } catch (error) {
+      this.logger.error('❌ ROUTE: Failed to get categories', {
+        error: error.message,
+        stack: error.stack,
+        userId: req.user?.id
+      });
       this.handleError(error, req, res, 'categories_view_failed', 'Failed to retrieve categories');
     }
   }
@@ -442,7 +459,19 @@ class PasswordRoutes {
    */
   async getCategoryStats(req, res) {
     try {
+      this.logger.info('🔄 ROUTE: GET /api/passwords/categories/stats called', {
+        userId: req.user?.id,
+        userEmail: req.user?.email,
+        ip: req.ip,
+        userAgent: req.get('User-Agent')
+      });
+
       const stats = await this.categoryService.getCategoryStats();
+
+      this.logger.info('✅ ROUTE: Category stats retrieved successfully', {
+        statsKeys: Object.keys(stats || {}),
+        stats: stats
+      });
 
       res.json({
         success: true,
@@ -450,6 +479,11 @@ class PasswordRoutes {
       });
 
     } catch (error) {
+      this.logger.error('❌ ROUTE: Failed to get category stats', {
+        error: error.message,
+        stack: error.stack,
+        userId: req.user?.id
+      });
       this.handleError(error, req, res, 'category_stats_failed', 'Failed to retrieve category statistics');
     }
   }

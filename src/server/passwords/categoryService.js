@@ -6,14 +6,21 @@ const { auditLog } = require('../utils/logger');
  * @returns {Promise<Array>} Array of password categories
  */
 async function getPasswordCategories() {
+  console.log('🔄 CATEGORY_SERVICE: getPasswordCategories() called');
   try {
+    console.log('🔄 CATEGORY_SERVICE: Executing SQL query for categories');
     const result = await query(
       `SELECT id, name, description, color, created_by, created_at
-       FROM password_categories 
+       FROM password_categories
        ORDER BY name ASC`
     );
 
-    return result.rows.map(category => ({
+    console.log('✅ CATEGORY_SERVICE: SQL query result:', {
+      rowCount: result.rows?.length,
+      rows: result.rows
+    });
+
+    const categories = result.rows.map(category => ({
       id: category.id,
       name: category.name,
       description: category.description,
@@ -22,7 +29,18 @@ async function getPasswordCategories() {
       createdAt: category.created_at
     }));
 
+    console.log('✅ CATEGORY_SERVICE: Categories mapped successfully:', {
+      count: categories.length,
+      categories: categories
+    });
+
+    return categories;
+
   } catch (error) {
+    console.error('❌ CATEGORY_SERVICE: getPasswordCategories error:', {
+      message: error.message,
+      stack: error.stack
+    });
     throw new Error(`Failed to retrieve password categories: ${error.message}`);
   }
 }
@@ -309,9 +327,11 @@ async function deletePasswordCategory(categoryId, userId) {
  * @returns {Promise<Array>} Array of categories with password counts
  */
 async function getCategoryStats() {
+  console.log('🔄 CATEGORY_SERVICE: getCategoryStats() called');
   try {
+    console.log('🔄 CATEGORY_SERVICE: Executing SQL query for category stats');
     const result = await query(`
-      SELECT 
+      SELECT
         pc.id,
         pc.name,
         pc.description,
@@ -323,7 +343,12 @@ async function getCategoryStats() {
       ORDER BY pc.name ASC
     `);
 
-    return result.rows.map(row => ({
+    console.log('✅ CATEGORY_SERVICE: SQL query result for stats:', {
+      rowCount: result.rows?.length,
+      rows: result.rows
+    });
+
+    const stats = result.rows.map(row => ({
       id: row.id,
       name: row.name,
       description: row.description,
@@ -331,7 +356,18 @@ async function getCategoryStats() {
       passwordCount: parseInt(row.password_count)
     }));
 
+    console.log('✅ CATEGORY_SERVICE: Category stats mapped successfully:', {
+      count: stats.length,
+      stats: stats
+    });
+
+    return stats;
+
   } catch (error) {
+    console.error('❌ CATEGORY_SERVICE: getCategoryStats error:', {
+      message: error.message,
+      stack: error.stack
+    });
     throw new Error(`Failed to retrieve category statistics: ${error.message}`);
   }
 }

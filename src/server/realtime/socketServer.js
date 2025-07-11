@@ -1,7 +1,6 @@
 const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
 const { findUserById } = require('../auth/authService');
-const { handleConnection, handleDisconnection } = require('./socketHandlers');
 const logger = require('../utils/logger');
 
 /**
@@ -91,6 +90,8 @@ function initializeSocketServer(httpServer) {
 
   // Connection handling
   io.on('connection', (socket) => {
+    // Lazy load handlers to avoid circular dependency
+    const { handleConnection, handleDisconnection } = require('./socketHandlers');
     handleConnection(io, socket);
 
     // Handle disconnection

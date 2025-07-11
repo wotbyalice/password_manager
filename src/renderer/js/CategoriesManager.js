@@ -38,24 +38,43 @@ class CategoriesManager {
    */
   async loadCategories() {
     try {
-      const response = await fetch(`${this.apiBaseUrl}/categories`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
+      console.log('🔄 CATEGORIES_MANAGER: Loading categories via IPC...');
+
+      // Use IPC instead of fetch for Electron app
+      if (window.electronAPI && window.electronAPI.getCategories) {
+        const result = await window.electronAPI.getCategories();
+        console.log('🔄 CATEGORIES_MANAGER: IPC result:', result);
+
+        if (result.success) {
+          this.categories = result.data.categories || [];
+          console.log('✅ CATEGORIES_MANAGER: Categories loaded successfully:', this.categories.length);
+          return this.categories;
+        } else {
+          throw new Error(result.error || 'Failed to load categories');
         }
-      });
+      } else {
+        // Fallback to fetch for non-Electron environments
+        console.log('🔄 CATEGORIES_MANAGER: Using fetch fallback...');
+        const response = await fetch(`${this.apiBaseUrl}/categories`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+          }
+        });
 
-      const data = await response.json();
+        const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Unknown error');
+        if (!response.ok) {
+          throw new Error(data.error || 'Unknown error');
+        }
+
+        this.categories = data.categories;
+        return this.categories;
       }
 
-      this.categories = data.categories;
-      return this.categories;
-
     } catch (error) {
+      console.error('❌ CATEGORIES_MANAGER: Load error:', error);
       throw new Error(`Failed to load categories: ${error.message}`);
     }
   }
@@ -92,24 +111,42 @@ class CategoriesManager {
     }
 
     try {
-      const response = await fetch(`${this.apiBaseUrl}/categories`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(categoryData)
-      });
+      console.log('🔄 CATEGORIES_MANAGER: Creating category via IPC...', categoryData);
 
-      const data = await response.json();
+      // Use IPC instead of fetch for Electron app
+      if (window.electronAPI && window.electronAPI.createCategory) {
+        const result = await window.electronAPI.createCategory(categoryData);
+        console.log('🔄 CATEGORIES_MANAGER: Create IPC result:', result);
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Unknown error');
+        if (result.success) {
+          console.log('✅ CATEGORIES_MANAGER: Category created successfully');
+          return result.data.category;
+        } else {
+          throw new Error(result.error || 'Failed to create category');
+        }
+      } else {
+        // Fallback to fetch for non-Electron environments
+        console.log('🔄 CATEGORIES_MANAGER: Using fetch fallback for create...');
+        const response = await fetch(`${this.apiBaseUrl}/categories`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(categoryData)
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Unknown error');
+        }
+
+        return data.category;
       }
 
-      return data.category;
-
     } catch (error) {
+      console.error('❌ CATEGORIES_MANAGER: Create error:', error);
       throw new Error(`Failed to create category: ${error.message}`);
     }
   }

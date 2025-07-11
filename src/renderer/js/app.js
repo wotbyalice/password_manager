@@ -63,29 +63,29 @@ class PasswordManagerApp {
      */
     async initMainApp() {
         try {
-            // Connect to real-time updates
-            await electronAPI.connectSocket(await electronAPI.getStoredData('authToken'));
-            
+            // Note: Socket connection is already established during login process
+            // No need to connect again here to avoid multiple connections
+
             // Set up UI based on user role
             this.setupUserInterface();
-            
+
             // Initialize view controllers
             this.initViewControllers();
-            
+
             // Set up event listeners
             this.setupEventListeners();
-            
+
             // Load initial data
             await this.loadInitialData();
-            
+
             // Show main application
             this.showScreen('main');
-            
+
             // Set up real-time event handlers
             this.setupRealtimeHandlers();
-            
+
             console.log('Application initialized successfully');
-            
+
         } catch (error) {
             console.error('Main app initialization error:', error);
             this.showNotification('Failed to initialize application', 'error');
@@ -398,30 +398,49 @@ class PasswordManagerApp {
     /**
      * Navigate to a specific view
      */
-    navigateToView(viewName) {
-        // Hide all views
+    async navigateToView(viewName) {
+        await electronAPI.logInfo('🔄 FRONTEND: navigateToView() called', {
+            fromView: this.currentView,
+            toView: viewName,
+            timestamp: new Date().toISOString()
+        });
+
+        // Hide all views and remove both active and hidden classes
         document.querySelectorAll('.view').forEach(view => {
             view.classList.remove('active');
+            view.classList.remove('hidden'); // Remove hidden class that might have been added by other navigation
         });
-        
+
         // Remove active state from nav items
         document.querySelectorAll('.nav-item').forEach(item => {
             item.classList.remove('active');
         });
-        
+
         // Show target view
         const targetView = document.getElementById(`${viewName}-view`);
         const targetNavItem = document.querySelector(`[data-view="${viewName}"]`);
-        
+
+        await electronAPI.logInfo('🔄 FRONTEND: View elements found', {
+            targetViewExists: !!targetView,
+            targetNavItemExists: !!targetNavItem,
+            targetViewId: targetView?.id,
+            previousView: this.currentView
+        });
+
         if (targetView) {
             targetView.classList.add('active');
             this.currentView = viewName;
         }
-        
+
         if (targetNavItem) {
             targetNavItem.classList.add('active');
         }
-        
+
+        await electronAPI.logInfo('🔄 FRONTEND: View switch complete, loading data', {
+            newCurrentView: this.currentView,
+            viewName: viewName
+        });
+
         // Load view-specific data
         this.loadViewData(viewName);
     }
@@ -431,18 +450,31 @@ class PasswordManagerApp {
      */
     async loadViewData(viewName) {
         try {
+            await electronAPI.logInfo('🔄 FRONTEND: loadViewData() called', {
+                viewName: viewName,
+                hasPasswordManager: !!this.passwordManager,
+                hasCategoriesManager: !!this.categoriesManager,
+                timestamp: new Date().toISOString()
+            });
+
             switch (viewName) {
                 case 'passwords':
                     if (this.passwordManager) {
+                        await electronAPI.logInfo('🔄 FRONTEND: Loading passwords via passwordManager');
                         await this.passwordManager.loadPasswords();
+                        await electronAPI.logInfo('✅ FRONTEND: Passwords loaded successfully');
+                    } else {
+                        await electronAPI.logError('❌ FRONTEND: passwordManager not available');
                     }
                     break;
                 case 'categories':
                     if (this.categoriesManager) {
+                        await electronAPI.logInfo('🔄 FRONTEND: Loading categories');
                         await this.categoriesManager.loadCategories();
                         if (this.categoriesUI) {
                             this.categoriesUI.renderCategories();
                         }
+                        await electronAPI.logInfo('✅ FRONTEND: Categories loaded successfully');
                     }
                     break;
                 case 'users':
@@ -457,7 +489,7 @@ class PasswordManagerApp {
                     break;
             }
         } catch (error) {
-            console.error(`Error loading ${viewName} data:`, error);
+            await electronAPI.logError(`Error loading data for view ${viewName}`, error);
             this.showNotification(`Failed to load ${viewName} data`, 'error');
         }
     }
@@ -489,9 +521,24 @@ class PasswordManagerApp {
             document.getElementById('search-input')?.focus();
         }
         
-        // Escape - Close modals
+        // Escape - Close modals (but not if actively editing)
         if (e.key === 'Escape') {
-            this.closeAllModals();
+            // Check if user is actively editing in an input field
+            const activeElement = document.activeElement;
+            const isEditingInput = activeElement && (
+                activeElement.tagName === 'INPUT' ||
+                activeElement.tagName === 'TEXTAREA' ||
+                activeElement.tagName === 'SELECT' ||
+                activeElement.isContentEditable
+            );
+
+            // Only close modals if not actively editing
+            if (!isEditingInput) {
+                console.log('🔧 KEYBOARD: Escape pressed, closing modals');
+                this.closeAllModals();
+            } else {
+                console.log('🔧 KEYBOARD: Escape pressed but user is editing, ignoring');
+            }
         }
     }
 

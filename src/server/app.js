@@ -141,20 +141,48 @@ app.use('/api/categories', authenticateToken, categoryRoutes);
 
 // Compatibility routes for incorrect API calls from browser (MUST be before auth routes)
 app.get('/categories', async (req, res) => {
-  console.log('🔧 Compatibility route: /categories called - should be /api/passwords/categories');
+  console.log('🔧 COMPATIBILITY: /categories route called');
+  console.log('🔧 COMPATIBILITY: Request details:', {
+    method: req.method,
+    url: req.url,
+    userAgent: req.get('User-Agent'),
+    ip: req.ip,
+    headers: Object.keys(req.headers)
+  });
+
   try {
+    console.log('🔧 COMPATIBILITY: Calling getPasswordCategories()...');
+    console.log('🔧 COMPATIBILITY: getPasswordCategories function available:', typeof getPasswordCategories);
+
     const categories = await getPasswordCategories();
-    console.log('🔧 Categories fetched successfully:', categories.length, 'categories');
-    res.json({
+
+    console.log('🔧 COMPATIBILITY: Categories fetched successfully:', {
+      count: categories?.length,
+      categories: categories
+    });
+
+    const response = {
       success: true,
       categories
-    });
+    };
+
+    console.log('🔧 COMPATIBILITY: Sending response:', response);
+    res.json(response);
+
   } catch (error) {
-    console.error('🔧 Error in categories compatibility route:', error);
-    res.status(500).json({
+    console.error('🔧 COMPATIBILITY: Error in categories compatibility route:', {
+      message: error.message,
+      stack: error.stack,
+      error: error
+    });
+
+    const errorResponse = {
       success: false,
       error: 'Failed to fetch categories'
-    });
+    };
+
+    console.log('🔧 COMPATIBILITY: Sending error response:', errorResponse);
+    res.status(500).json(errorResponse);
   }
 });
 
@@ -417,6 +445,49 @@ app.get('/api/admin/users', (req, res) => {
     success: true,
     message: 'Admin users endpoint - to be implemented'
   });
+});
+
+// Audit logs endpoint
+app.get('/api/audit/logs', authenticateToken, (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied. Admin privileges required.'
+      });
+    }
+
+    // For now, return empty audit logs since we don't have a full audit system implemented yet
+    // This prevents the "Failed to load audit logs" error on startup
+    const { page = 1, limit = 50 } = req.query;
+
+    logger.info('🔍 AUDIT: Admin requested audit logs', {
+      userId: req.user.userId,
+      page: parseInt(page),
+      limit: parseInt(limit)
+    });
+
+    res.json({
+      success: true,
+      data: {
+        logs: [], // Empty for now - will be populated when audit system is fully implemented
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: 0,
+          pages: 1
+        }
+      }
+    });
+
+  } catch (error) {
+    logger.error('❌ AUDIT: Error fetching audit logs:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch audit logs'
+    });
+  }
 });
 
 // Log requests for debugging categories issue

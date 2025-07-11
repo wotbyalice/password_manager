@@ -59,7 +59,10 @@ function setupIpcHandlers() {
       
       // Connect to Socket.io
       await socketClient.connect(token);
-      
+
+      // Set up socket event forwarding
+      setupSocketEventForwarding();
+
       return { success: true, user, token };
     } catch (error) {
       return { 
@@ -184,25 +187,65 @@ function setupIpcHandlers() {
 
   // Categories handlers
   ipcMain.handle('categories:get-all', async (event) => {
+    console.log('🔄 IPC: categories:get-all handler called');
     try {
+      console.log('🔄 IPC: Making API call to /passwords/categories');
+      console.log('🔄 IPC: API base URL:', api.defaults?.baseURL);
+
       const response = await api.get('/passwords/categories');
+      console.log('✅ IPC: categories:get-all API response:', {
+        status: response.status,
+        statusText: response.statusText,
+        dataLength: response.data?.length,
+        data: response.data
+      });
+
       return { success: true, data: response.data };
     } catch (error) {
+      console.error('❌ IPC: categories:get-all error:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        code: error.code,
+        stack: error.stack
+      });
+
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch categories'
+        error: error.response?.data?.error || error.message || 'Failed to fetch categories'
       };
     }
   });
 
   ipcMain.handle('categories:get-stats', async (event) => {
+    console.log('🔄 IPC: categories:get-stats handler called');
     try {
+      console.log('🔄 IPC: Making API call to /passwords/categories/stats');
+      console.log('🔄 IPC: API base URL:', api.defaults?.baseURL);
+
       const response = await api.get('/passwords/categories/stats');
+      console.log('✅ IPC: categories:get-stats API response:', {
+        status: response.status,
+        statusText: response.statusText,
+        dataKeys: Object.keys(response.data || {}),
+        data: response.data
+      });
+
       return { success: true, data: response.data };
     } catch (error) {
+      console.error('❌ IPC: categories:get-stats error:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        code: error.code,
+        stack: error.stack
+      });
+
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch category statistics'
+        error: error.response?.data?.error || error.message || 'Failed to fetch category statistics'
       };
     }
   });
@@ -330,6 +373,13 @@ function setupIpcHandlers() {
   // Socket.io handlers
   ipcMain.handle('socket:connect', async (event, token) => {
     try {
+      // Check if already connected to avoid duplicate connections
+      const status = socketClient.getStatus();
+      if (status.connected) {
+        console.log('Socket already connected, skipping duplicate connection');
+        return { success: true };
+      }
+
       await socketClient.connect(token);
       setupSocketEventForwarding();
       return { success: true };
@@ -475,6 +525,22 @@ function setupIpcHandlers() {
 
   ipcMain.handle('app:is-dev', async (event) => {
     return process.env.NODE_ENV === 'development';
+  });
+
+  // Logging handlers for frontend debugging
+  ipcMain.handle('log:info', async (event, message, data = {}) => {
+    console.log(`🔧 FRONTEND: ${message}`, data);
+    return { success: true };
+  });
+
+  ipcMain.handle('log:error', async (event, error, context = {}) => {
+    console.error(`❌ FRONTEND: ${error}`, context);
+    return { success: true };
+  });
+
+  ipcMain.handle('log:debug', async (event, message, data = {}) => {
+    console.log(`🐛 FRONTEND: ${message}`, data);
+    return { success: true };
   });
 
   // Auto-restore auth token on startup

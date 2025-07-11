@@ -70,9 +70,11 @@ function decryptPassword(encryptedPassword) {
       value: encryptedPassword ? encryptedPassword.substring(0, 50) + '...' : 'null/undefined'
     });
 
-    if (!encryptedPassword || typeof encryptedPassword !== 'string') {
-      console.error('🔧 CRYPTO: Invalid encrypted password input');
-      throw new Error('Encrypted password must be a non-empty string');
+    // Handle NULL, undefined, or empty passwords gracefully
+    if (!encryptedPassword || encryptedPassword === 'NULL' || encryptedPassword === 'null' ||
+        typeof encryptedPassword !== 'string' || encryptedPassword.trim() === '') {
+      console.log('🔧 CRYPTO: Password is NULL/undefined/empty, returning empty string');
+      return '';
     }
 
     console.log('🔧 CRYPTO: Decrypting password, length:', encryptedPassword.length);

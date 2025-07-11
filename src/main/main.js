@@ -61,7 +61,7 @@ function createMainWindow() {
       mainWindow.hide();
       
       // Show notification about minimizing to tray
-      if (process.platform === 'win32') {
+      if (process.platform === 'win32' && tray && tray.displayBalloon) {
         tray.displayBalloon({
           iconType: 'info',
           title: 'Password Manager',
@@ -374,7 +374,7 @@ function setupAutoUpdater() {
 app.whenReady().then(() => {
   // Make mainWindow globally accessible
   global.mainWindow = createMainWindow();
-  createTray();
+  tray = createTray();
   createMenu();
   setupAutoUpdater();
   setupIpcHandlers();

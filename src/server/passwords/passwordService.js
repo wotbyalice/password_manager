@@ -241,11 +241,15 @@ async function getPasswordById(passwordId) {
 
     let decryptedPassword;
     try {
-      decryptedPassword = decryptPassword(entry.password_encrypted);
+      // Handle undefined/null password_encrypted gracefully
+      const passwordToDecrypt = entry.password_encrypted || '';
+      decryptedPassword = decryptPassword(passwordToDecrypt);
       console.log('🔧 PASSWORD SERVICE: Password decryption successful');
     } catch (decryptError) {
       console.error('🔧 PASSWORD SERVICE: Password decryption failed:', decryptError);
-      throw decryptError;
+      // For edit functionality, don't throw error - just return empty password
+      console.log('🔧 PASSWORD SERVICE: Using empty password for edit functionality');
+      decryptedPassword = '';
     }
 
     let decryptedUrl = null;
