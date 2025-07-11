@@ -1,31 +1,41 @@
-# 🔐 WOT Password Manager v0.5
+# 🔐 WOT Password Manager v0.6.0
 
 **Enterprise-grade password manager for office environments with real-time collaboration**
 
-## 🚀 **LATEST RELEASE: VERSION 0.5 - FULLY FUNCTIONAL**
+## 🚀 **LATEST RELEASE: VERSION 0.6.0 - ENHANCED UI/UX & STABILITY**
 
-✅ **Password management system is now working and tested**
-✅ **SQLite database integration complete**
-✅ **Critical password update functionality fixed**
-✅ **Comprehensive server-side logging implemented**
-✅ **Ready for production deployment**
+✅ **Enhanced user experience with improved notifications and button labels**
+✅ **Server stability improvements - no more restarts during operations**
+✅ **Socket connection reliability enhancements**
+✅ **Version display on login screen**
+✅ **Production-ready with comprehensive testing**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org/)
 [![Electron](https://img.shields.io/badge/electron-%5E27.0.0-blue)](https://electronjs.org/)
-[![Status](https://img.shields.io/badge/Status-v0.5%20Released-brightgreen)](https://github.com/wotbyalice/password_manager/releases/tag/v0.5)
-[![Version](https://img.shields.io/badge/Version-0.5-blue)](https://github.com/wotbyalice/password_manager/releases/latest)
+[![Status](https://img.shields.io/badge/Status-v0.6.0%20Released-brightgreen)](https://github.com/wotbyalice/password_manager/releases/tag/v0.6.0)
+[![Version](https://img.shields.io/badge/Version-0.6.0-blue)](https://github.com/wotbyalice/password_manager/releases/latest)
 
-## 🆕 What's New in v0.5
+## 🆕 What's New in v0.6.0
 
-**Major Improvements:**
-- 🔧 **Fixed Password Updates** - Critical password editing functionality now works perfectly
-- 🗄️ **SQLite Integration** - Robust local database for development and testing
-- 📊 **Enhanced Logging** - Comprehensive server-side logging for debugging and monitoring
-- ⚡ **Performance Fixes** - Resolved database transaction issues and modal handling
-- 🛡️ **Error Handling** - Improved error handling and user feedback
+**User Experience Improvements:**
+- 🎯 **Better Button Labels** - Changed "Update Password" to "Save Changes" for clearer action indication
+- 🔔 **Single Notifications** - Eliminated confusing dual notifications for all password operations
+- 📱 **Version Display** - Added v0.6.0 version indicator on the login screen
+
+**Stability Enhancements:**
+- 🛠️ **Server Stability** - Fixed server restart issues during password operations with improved nodemon configuration
+- 🔗 **Socket Reliability** - Enhanced real-time connection management for better performance
+- ⚡ **Smooth Operations** - Password create/update/delete operations now work seamlessly without interruptions
+
+**Technical Improvements:**
+- ⚙️ **Nodemon Configuration** - Configured to ignore data directory writes preventing unnecessary restarts
+- 📢 **Streamlined Notifications** - Single, informative messages for all operations
+- 🔒 **Security Maintained** - All existing security features and admin controls preserved
+- 📊 **Enhanced Logging** - Improved error handling and debugging capabilities
 
 **Previous Versions:**
+- v0.5: Fixed password updates, SQLite integration, enhanced logging
 - v0.4: Major UI and encryption fixes
 - v0.3: SQLite database integration foundation
 - v0.2: Authentication system improvements
